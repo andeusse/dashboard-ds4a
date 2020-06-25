@@ -1,1 +1,140 @@
-<p>DASHBOARD</p>
+<div class="container-fluid p-3 my-3 bg-dark text-light">
+    <div class="row justify-content-center">
+        <div class="p-2 btn-div">
+            <button mat-raised-button class="actionBtn" (click)="addValue()"><fa-icon [icon]="['fas', 'home']"></fa-icon> Add</button>
+        </div>
+        <div class="p-2 btn-div">
+            <button mat-raised-button class="actionBtn">Basic</button>
+        </div>
+        <div class="p-2">
+            <mat-form-field>
+                <mat-label>Choose a date</mat-label>
+                <input matInput [matDatepicker]="picker">
+                <mat-datepicker-toggle matSuffix [for]="picker">
+                </mat-datepicker-toggle>
+                <mat-datepicker #picker>
+                </mat-datepicker>
+            </mat-form-field>
+        </div>
+    </div>
+    <div>
+        <div class="row card-deck mb-2 text-center">
+            <div *ngFor="let item of Indicators1" class="bg-light text-dark card col-md-3">  
+                <div class="card-header text-center">
+                    <h4 class="my-0 font-weight-normal" id="{{item.title}}">{{item.title}}</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="card-title pricing-card-title"><fa-icon id="icon-indicator-{{item.id}}" style="font-size: 50px;" [icon]="['fas', item.icon]"></fa-icon> {{item.value}} <small class="text-muted">{{item.unit}}</small></h1>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <div class="row card-deck mb-2 text-center">
+            <div *ngFor="let item of Indicators2" class="bg-light text-dark card col-md-3">  
+                <div class="card-header text-center">
+                    <h4 class="my-0 font-weight-normal" id="{{item.title}}">{{item.title}}</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="card-title pricing-card-title"><fa-icon id="icon-indicator-{{item.id}}" style="font-size: 50px;" [icon]="['fas', item.icon]"></fa-icon> {{item.value}} <small class="text-muted">{{item.unit}}</small></h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mat-elevation-z8">
+            <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="Indicators">
+                <ng-container matColumnDef="name">
+                    <th mat-header-cell *matHeaderCellDef class="text-light"> NAME </th>
+                    <td mat-cell *matCellDef="let item" class="text-light"> {{item.title}} </td>
+                </ng-container>
+                <ng-container matColumnDef="value">
+                    <th mat-header-cell *matHeaderCellDef class="text-light"> VALUE </th>
+                    <td mat-cell *matCellDef="let item" class="text-light"> {{item.value}} </td>
+                </ng-container>
+                <ng-container matColumnDef="unit">
+                    <th mat-header-cell *matHeaderCellDef class="text-light"> UNIT </th>
+                    <td mat-cell *matCellDef="let item" class="text-light"> {{item.unit}} </td>
+                </ng-container>
+                <ng-container matColumnDef="icon">
+                    <th mat-header-cell *matHeaderCellDef class="text-light">  </th>
+                    <td mat-cell *matCellDef="let item" class="text-left" >
+                        <fa-icon id="icon-indicator-{{item.id}}" style="font-size: 25px;" [icon]="['fas', item.icon]"></fa-icon>
+                    </td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="row p-3">
+        <div class="col-md-6">
+            <div class="p-1">
+                <nav>
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a class="nav-item nav-link active" id="nav-timeline-tab" data-toggle="tab" href="#nav-timeline" role="tab" aria-controls="nav-timeline" aria-selected="true">Timeline</a>
+                        <a class="nav-item nav-link" id="nav-correlations-tab" data-toggle="tab" href="#nav-correlations" role="tab" aria-controls="nav-correlations" aria-selected="false">Correlations</a>
+                    </div>
+                </nav>
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="tab-pane fade show active" id="nav-timeline" role="tabpanel" aria-labelledby="nav-timeline-tab">
+                        <div>
+                            <canvas baseChart
+                                    height="250"
+                                    [datasets]="data"
+                                    [labels]="labels"
+                                    [options]="options"
+                                    [legend]="legends"
+                                    [chartType]="type">
+                            </canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="nav-correlations" role="tabpanel" aria-labelledby="nav-correlations-tab">
+                        <div>
+                            <canvas baseChart
+                                    height="250"
+                                    [datasets]="data"
+                                    [labels]="labels"
+                                    [options]="options"
+                                    [legend]="legends"
+                                    [chartType]="type2">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-1">
+                <nav>
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a class="nav-item nav-link active" id="nav-demographic-tab" data-toggle="tab" href="#nav-demographic" role="tab" aria-controls="nav-demographic" aria-selected="true">Demographic</a>
+                    </div>
+                </nav>
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="tab-pane fade show active" id="nav-demographic" role="tabpanel" aria-labelledby="nav-demographic-tab">
+                        <div>
+                            <canvas baseChart
+                                    height="250"
+                                    [datasets]="data3"
+                                    [labels]="labels3"
+                                    [options]="options"
+                                    [legend]="legends"
+                                    [chartType]="type3">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col" id='map'>
+            <!-- <google-map
+                height="600"
+                width="100%"
+                [zoom]="mapZoom"
+                [center]="mapCenter"
+                [options]="mapOptions">
+            </google-map> -->
+        </div>
+    </div>
+</div>
