@@ -1,15 +1,20 @@
 import { Component, OnInit } from '@angular/core';
+import { User, Users } from '../data-structure/users';
 
 @Component({
-  selector: 'app-about',
-  templateUrl: './about.component.html',
-  styleUrls: ['./about.component.css']
+	selector: 'app-about',
+	templateUrl: './about.component.html',
+	styleUrls: ['./about.component.css']
 })
 export class AboutComponent implements OnInit {
 
-  constructor() { }
+	users: Array<User> = [];
 
-  ngOnInit(): void {
-  }
+	constructor() {
+		let user = new Users();
+		this.users = user.users;
+	}
 
+	ngOnInit(): void {
+	}
 }

@@ -4,7 +4,7 @@
             <button mat-raised-button class="actionBtn" (click)="addValue()"><fa-icon [icon]="['fas', 'home']"></fa-icon> Add</button>
         </div>
         <div class="p-2 btn-div">
-            <button mat-raised-button class="actionBtn">Basic</button>
+            <button mat-raised-button class="actionBtn" (click)="randomValues()">Random</button>
         </div>
         <div class="p-2">
             <mat-form-field>
@@ -127,14 +127,7 @@
                 </div>
             </div>
         </div>
-        <div class="col" id='map'>
-            <!-- <google-map
-                height="600"
-                width="100%"
-                [zoom]="mapZoom"
-                [center]="mapCenter"
-                [options]="mapOptions">
-            </google-map> -->
+        <div class="col" id='map' style="height: 600px;">
         </div>
     </div>
 </div>

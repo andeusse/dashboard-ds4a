@@ -21,32 +21,32 @@ import { HomeComponent } from './home/home.component';
 
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    MenuComponent,
-    AboutComponent,
-    DashboardComponent,
-    ErrorComponent,
-    HomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    FontAwesomeModule,
-    BrowserAnimationsModule,
-    NgbModule,
-    MaterialModule,
-    HttpClientModule,
-    ChartsModule,
-    GoogleMapsModule
-  ],
-  providers: [
-    { provide: MAT_DATE_LOCALE, useValue: 'en-GB' }
-  ],
-  bootstrap: [AppComponent]
+	declarations: [
+		AppComponent,
+		MenuComponent,
+		AboutComponent,
+		DashboardComponent,
+		ErrorComponent,
+		HomeComponent
+	],
+	imports: [
+		BrowserModule,
+		AppRoutingModule,
+		FontAwesomeModule,
+		BrowserAnimationsModule,
+		NgbModule,
+		MaterialModule,
+		HttpClientModule,
+		ChartsModule,
+		GoogleMapsModule
+	],
+	providers: [
+		{ provide: MAT_DATE_LOCALE, useValue: 'en-GB' }
+	],
+	bootstrap: [AppComponent]
 })
 export class AppModule {
-  constructor(private library: FaIconLibrary){
-    library.addIcons(faHome, faThermometerThreeQuarters, faCloudRain, faCloudShowersHeavy, faExclamationTriangle, faExclamationCircle, faSkullCrossbones, faChartLine, faChartBar);
-  }
+	constructor(private library: FaIconLibrary) {
+		library.addIcons(faHome, faThermometerThreeQuarters, faCloudRain, faCloudShowersHeavy, faExclamationTriangle, faExclamationCircle, faSkullCrossbones, faChartLine, faChartBar);
+	}
 }
