@@ -17,7 +17,7 @@ export class Users{
         this.users.push(temp);
         temp = new User("Hervieux-Moore, Zach (TA)", "assets/images/LogoSmall.png", "", "Texto");
         this.users.push(temp);
-        temp = new User("ez, Ana (TA)", "assets/images/LogoSmall.png", "", "Texto");
+        temp = new User("Lopez, Ana (TA)", "assets/images/LogoSmall.png", "", "Texto");
         this.users.push(temp);
     }
 }

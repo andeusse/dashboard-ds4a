@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChildren, QueryList } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
+import { state } from '@angular/animations';
+import { BaseChartDirective } from 'ng2-charts';
 
 @Component({
 	selector: 'app-dashboard',
@@ -8,107 +10,13 @@ import { MatTableDataSource } from '@angular/material/table';
 })
 export class DashboardComponent implements OnInit {
 
-	colormap = require('colormap');
+	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
 	map: google.maps.Map;
-	mapOptions: google.maps.MapOptions = {
-		zoomControl: false,
-		scrollwheel: true,
-		disableDoubleClickZoom: true,
-		streetViewControl: false,
-		zoom: 5,
-		maxZoom: 7,
-		minZoom: 5,
-		mapTypeControl: false,
-		center: {
-			lat: 4.5709,
-			lng: -74.2973
-		},
-		mapTypeId: google.maps.MapTypeId.ROADMAP,
-		styles: [
-            {elementType: 'geometry', stylers: [{color: '#242f3e'}]},
-            {elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
-            {elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
-            {
-              featureType: 'administrative.locality',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#d59563'}]
-            },
-            {
-              featureType: 'poi',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#d59563'}]
-            },
-            {
-              featureType: 'poi.park',
-              elementType: 'geometry',
-              stylers: [{color: '#263c3f'}]
-            },
-            {
-              featureType: 'poi.park',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#6b9a76'}]
-            },
-            {
-              featureType: 'road',
-              elementType: 'geometry',
-              stylers: [{color: '#38414e'}]
-            },
-            {
-              featureType: 'road',
-              elementType: 'geometry.stroke',
-              stylers: [{color: '#212a37'}]
-            },
-            {
-              featureType: 'road',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#9ca5b3'}]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry',
-              stylers: [{color: '#746855'}]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'geometry.stroke',
-              stylers: [{color: '#1f2835'}]
-            },
-            {
-              featureType: 'road.highway',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#f3d19c'}]
-            },
-            {
-              featureType: 'transit',
-              elementType: 'geometry',
-              stylers: [{color: '#2f3948'}]
-            },
-            {
-              featureType: 'transit.station',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#d59563'}]
-            },
-            {
-              featureType: 'water',
-              elementType: 'geometry',
-              stylers: [{color: '#000000'}]
-            },
-            {
-              featureType: 'water',
-              elementType: 'labels.text.fill',
-              stylers: [{color: '#515c6d'}]
-            },
-            {
-              featureType: 'water',
-              elementType: 'labels.text.stroke',
-              stylers: [{color: '#17263c'}]
-            }
-        ]
-	}
-	mapInfoWindow: google.maps.InfoWindow = new google.maps.InfoWindow({
-		disableAutoPan:true
-	});
+	mapInfoWindow: google.maps.InfoWindow;
+	minLegendValue: number = 0;
+	maxLegendValue: number = 200;
+	scrollBarValue: number;
 
 	displayedColumns: string[] = ['icon', 'name', 'value', 'unit'];
 
@@ -182,7 +90,7 @@ export class DashboardComponent implements OnInit {
 		this.labels3 = ['0 - 4', '5 - 17', '18 - 59', '60+']
 		this.legends = true;
 		this.data = [
-			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Series A' },
+			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Series A', fill: false },
 			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Series B' }
 		];
 		this.data3 = [
@@ -194,89 +102,184 @@ export class DashboardComponent implements OnInit {
 	}
 
 	initializeMap() {
+		let self = this;
+		this.mapInfoWindow = new google.maps.InfoWindow({ disableAutoPan: true });
 		let infowindow = this.mapInfoWindow;
-		let map = new google.maps.Map(document.getElementById('map'), this.mapOptions);
-
-		let valuesArray = [];
-		for (let i = 0; i < 33; i++){
-			valuesArray.push(100 * Math.random());
+		let mapOptions: google.maps.MapOptions = {
+			zoomControl: false,
+			scrollwheel: true,
+			disableDoubleClickZoom: true,
+			streetViewControl: false,
+			fullscreenControl: false,
+			zoom: 5,
+			maxZoom: 7,
+			minZoom: 5,
+			mapTypeControl: false,
+			center: {
+				lat: 4.5709,
+				lng: -74.2973
+			},
+			mapTypeId: google.maps.MapTypeId.ROADMAP,
+			styles: [
+				{ elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+				{ elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+				{ elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+				{
+					featureType: 'administrative.locality',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#d59563' }]
+				},
+				{
+					featureType: 'poi',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#d59563' }]
+				},
+				{
+					featureType: 'poi.park',
+					elementType: 'geometry',
+					stylers: [{ color: '#263c3f' }]
+				},
+				{
+					featureType: 'poi.park',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#6b9a76' }]
+				},
+				{
+					featureType: 'road',
+					elementType: 'geometry',
+					stylers: [{ color: '#38414e' }]
+				},
+				{
+					featureType: 'road',
+					elementType: 'geometry.stroke',
+					stylers: [{ color: '#212a37' }]
+				},
+				{
+					featureType: 'road',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#9ca5b3' }]
+				},
+				{
+					featureType: 'road.highway',
+					elementType: 'geometry',
+					stylers: [{ color: '#746855' }]
+				},
+				{
+					featureType: 'road.highway',
+					elementType: 'geometry.stroke',
+					stylers: [{ color: '#1f2835' }]
+				},
+				{
+					featureType: 'road.highway',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#f3d19c' }]
+				},
+				{
+					featureType: 'transit',
+					elementType: 'geometry',
+					stylers: [{ color: '#2f3948' }]
+				},
+				{
+					featureType: 'transit.station',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#d59563' }]
+				},
+				{
+					featureType: 'water',
+					elementType: 'geometry',
+					stylers: [{ color: '#000000' }]
+				},
+				{
+					featureType: 'water',
+					elementType: 'labels.text.fill',
+					stylers: [{ color: '#515c6d' }]
+				},
+				{
+					featureType: 'water',
+					elementType: 'labels.text.stroke',
+					stylers: [{ color: '#17263c' }]
+				}
+			]
 		}
-		let nshades = Math.max(...valuesArray) - Math.min(...valuesArray);
-		
-		let colors = this.colormap({
-			colormap: 'jet',
-			nshades: nshades,
-			format: 'hex',
-			alpha: 1
-		});
-		console.log(colors);
-		map.data.loadGeoJson('assets/Colombia.geo.json');
+		this.map = new google.maps.Map(document.getElementById('map'), mapOptions);
 
-		map.data.setStyle(function (feature) {
-			var color = 'red';
-			if (feature.getProperty('afterClickColor')) {
-				color = feature.getProperty('color');
+		this.map.data.loadGeoJson('assets/Colombia.geo.json', { idPropertyName: 'State' }, function(features){
+			for(let i = 0; i < features.length; i++){
+				features[i].setProperty('Value', Math.floor(Math.random() * 200));
 			}
-			if (feature.getProperty('State') == '05'){
-				console.log('Antioquia Rulez');
+		});
+
+		this.map.data.setStyle(function (feature) {
+			let color = [];
+			let value = feature.getProperty('Value');
+			if (!isNaN(value)) {
+				let low = [151, 83, 34];
+				let high = [5, 69, 54];
+				let delta = (value - self.minLegendValue) / (self.maxLegendValue - self.minLegendValue);
+				// let delta = (value - 0) / (200 - 0);
+				for (var i = 0; i < 3; i++) {
+					color[i] = (high[i] - low[i]) * delta + low[i];
+				}
+			}
+			else {
+				color = [255, 255, 255];
 			}
 			return ({
-				fillColor: color,
-				// strokeColor: '#17263C',
+				fillColor: 'hsl(' + color[0] + ',' + color[1] + '%,' + color[2] + '%)',
 				strokeColor: 'white',
+				fillOpacity: 0.5,
 				strokeWeight: 1,
-				strokeOpacity: 0.5
+				strokeOpacity: 1
 			});
 		});
 
-		map.data.addListener('click', function (event) {
-			// event.feature.setProperty('afterClickColor', true);
+		this.map.data.addListener('click', function (event) {
+			// console.log(event.feature.getProperty('Name'));
+			self.map.setCenter(event.feature.getProperty('Center'));
+			self.map.setZoom(7);
+			console.log(event.feature.getId());
 		});
 
-		map.data.addListener('mouseover', function (event) {
-			map.data.overrideStyle(event.feature, { strokeWeight: 5});
+		this.map.data.addListener('mouseover', function (event) {
+			self.map.data.overrideStyle(event.feature, { strokeWeight: 5 });
 			let center: google.maps.LatLngLiteral = {
 				lat: event.feature.getProperty('Center').lat,
 				lng: event.feature.getProperty('Center').lng
 			};
-
-			infowindow = new google.maps.InfoWindow();
-			infowindow.setContent(buildInfoWindowsHTML(event.feature));
-			infowindow.setPosition(center);
-			infowindow.setOptions({ pixelOffset: new google.maps.Size(0, -30) });
-			infowindow.open(map);
-
-			function buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {
-				let content = '';
-				content = `<div class="text-center">
-					<div class="bg-dark text-light card">  
-					<div class="card-header text-center">
-						<h4 class="my-0 font-weight-normal">`+ feature.getProperty('Name') + `</h4>
-					</div>
-					<div class="card-body text-center">
-						<p class="card-title pricing-card-title">Area: ` + formatNumber((Number(feature.getProperty('Area')) / 1E6).toFixed(0)) + ` km<sup>2</sup></p>
-					</div>
-					</div>
-					</div>`
-				return content;
-				function formatNumber(num: string) {
-					return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
-				}
-			}
+			// infowindow = new google.maps.InfoWindow();
+			// infowindow.setContent(self.buildInfoWindowsHTML(event.feature));
+			// infowindow.setPosition(center);
+			// infowindow.setOptions({ pixelOffset: new google.maps.Size(0, -30) });
+			// infowindow.open(self.map);
+			var percent = (event.feature.getProperty('Value') - self.minLegendValue) / (self.maxLegendValue - self.minLegendValue) * 100;
+			document.getElementById('data-label').textContent = event.feature.getProperty('Name');
+			document.getElementById('data-value').textContent = event.feature.getProperty('Value').toLocaleString() + ' cases';
+			document.getElementById('data-box').style.display = 'block';
+			document.getElementById('data-caret').style.display = 'block';
+			document.getElementById('data-caret').style.paddingLeft = percent + '%';
 		});
 
-		map.data.addListener('mouseout', function (event) {
-			map.data.revertStyle(event.feature);
-			infowindow.close();
+		this.map.data.addListener('mouseout', function (event) {
+			self.map.data.revertStyle(event.feature);
+			// infowindow.close();
+			document.getElementById('data-box').style.display = 'none';
+			document.getElementById('data-caret').style.display = 'none';
 		});
-		this.map = map;
 	}
 
+	centerMap() {
+		this.map.setCenter({ lat: 4.5709, lng: -74.2973 });
+		this.map.setZoom(5);
+	}
 
 	addValue() {
 		this.labels.push('Added');
 		this.data[0].data.push(100 * Math.random());
 		this.data[1].data.push(100 * Math.random());
+
+		this.map.data.getFeatureById("05").setProperty('AfterClickColor', true);
+		this.map.data.getFeatureById("05").setProperty('Color', 'blue');
+
 	}
 
 	randomValues() {
@@ -289,11 +292,68 @@ export class DashboardComponent implements OnInit {
 		this.Indicators.forEach((item) => {
 			item.value = Number((100 * Math.random()).toFixed(2));
 		});
+		for(let i = 0; i < this.data[0].data.length; i++){
+			this.data[0].data[i] = 100 * Math.random();
+			this.data[1].data[i] = 100 * Math.random();
+		}
+		for(let i = 0; i < this.data3[0].data.length; i++){
+			this.data3[0].data[i] = 100 * Math.random();
+			this.data3[1].data[i] = 100 * Math.random();
+			this.data3[2].data[i] = 100 * Math.random();
+			this.data3[3].data[i] = 100 * Math.random();
+		}
+		this.updateCharts();
+	}
+
+	updateCharts(){
+		this.charts.forEach((chart) => {
+			chart.update();
+		});
+	}
+
+	states = ["91", "05", "81", "08", "11", "13", "15", "17", "18", "85", "19", "20", "27", "23", "25",
+		"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
+
+	randomMapValues() {
+		let values = [];
+		for (let i = 0; i < this.states.length; i++) {
+			values.push(Math.floor(Math.random() * 200));
+		}
+		for (let i = 0; i < this.states.length; i++) {
+			this.map.data.getFeatureById(this.states[i]).setProperty('Value', values[i]);
+		}
+		this.minLegendValue = Math.min(...values);
+		this.maxLegendValue = Math.max(...values);
+	}
+
+	scrollBarChange(event: { value: any; }){
+		this.scrollBarValue = event.value;
+		this.randomMapValues();
+		this.randomValues();
 	}
 
 	ngOnInit(): void {
 		this.initializeCharts();
 		this.initializeMap();
+	}
+
+	buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {
+		let content = '';
+		content = `<div class="text-center">
+			<div class="bg-dark text-light card">  
+			<div class="card-header text-center">
+				<h4 class="my-0 font-weight-normal">`+ feature.getProperty('Name') + `</h4>
+			</div>
+			<div class="card-body text-center">
+				<p class="card-title pricing-card-title">Area: ` + formatNumber((Number(feature.getProperty('Area')) / 1E6).toFixed(0)) + ` km<sup>2</sup></p>
+				<p class="card-title pricing-card-title">Value: ` + Number(feature.getProperty('Value')) + ` Cases</p>
+			</div>
+			</div>
+			</div>`
+		return content;
+		function formatNumber(num: string) {
+			return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
+		}
 	}
 }
 

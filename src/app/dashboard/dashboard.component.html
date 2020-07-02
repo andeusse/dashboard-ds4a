@@ -1,10 +1,15 @@
 <div class="container-fluid p-3 my-3 bg-dark text-light">
     <div class="row justify-content-center">
         <div class="p-2 btn-div">
-            <button mat-raised-button class="actionBtn" (click)="addValue()"><fa-icon [icon]="['fas', 'home']"></fa-icon> Add</button>
+            <button mat-raised-button class="actionBtn" (click)="addValue()">
+                <fa-icon [icon]="['fas', 'home']"></fa-icon> Add
+            </button>
         </div>
         <div class="p-2 btn-div">
-            <button mat-raised-button class="actionBtn" (click)="randomValues()">Random</button>
+            <button mat-raised-button class="actionBtn" (click)="randomValues()">Random values</button>
+        </div>
+        <div class="p-2 btn-div">
+            <button mat-raised-button class="actionBtn" (click)="randomMapValues()">Random map</button>
         </div>
         <div class="p-2">
             <mat-form-field>
@@ -19,17 +24,21 @@
     </div>
     <div>
         <div class="row card-deck mb-2 text-center">
-            <div *ngFor="let item of Indicators1" class="bg-light text-dark card col-md-3">  
+            <div *ngFor="let item of Indicators1" class="bg-light text-dark card col-md-3">
                 <div class="card-header text-center">
                     <h4 class="my-0 font-weight-normal" id="{{item.title}}">{{item.title}}</h4>
                 </div>
                 <div class="card-body text-center">
-                    <h1 class="card-title pricing-card-title"><fa-icon id="icon-indicator-{{item.id}}" style="font-size: 50px;" [icon]="['fas', item.icon]"></fa-icon> {{item.value}} <small class="text-muted">{{item.unit}}</small></h1>
+                    <h1 class="card-title pricing-card-title">
+                        <fa-icon id="icon-indicator-{{item.id}}" style="font-size: 50px;" [icon]="['fas', item.icon]">
+                        </fa-icon> {{item.value}} <small class="text-muted">{{item.unit}}</small>
+                    </h1>
                 </div>
             </div>
         </div>
     </div>
-    <div>
+
+    <!-- <div>
         <div class="row card-deck mb-2 text-center">
             <div *ngFor="let item of Indicators2" class="bg-light text-dark card col-md-3">  
                 <div class="card-header text-center">
@@ -40,9 +49,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
-    <div class="row">
+    <!-- <div class="row">
         <div class="col-md-12 mat-elevation-z8">
             <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="Indicators">
                 <ng-container matColumnDef="name">
@@ -67,39 +76,34 @@
                 <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
             </table>
         </div>
-    </div>
+    </div> -->
 
     <div class="row p-3">
         <div class="col-md-6">
             <div class="p-1">
                 <nav>
                     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                        <a class="nav-item nav-link active" id="nav-timeline-tab" data-toggle="tab" href="#nav-timeline" role="tab" aria-controls="nav-timeline" aria-selected="true">Timeline</a>
-                        <a class="nav-item nav-link" id="nav-correlations-tab" data-toggle="tab" href="#nav-correlations" role="tab" aria-controls="nav-correlations" aria-selected="false">Correlations</a>
+                        <a class="nav-item nav-link active" id="nav-timeline-tab" data-toggle="tab" href="#nav-timeline"
+                            role="tab" aria-controls="nav-timeline" aria-selected="true">Timeline</a>
+                        <a class="nav-item nav-link" id="nav-correlations-tab" data-toggle="tab"
+                            href="#nav-correlations" role="tab" aria-controls="nav-correlations"
+                            aria-selected="false">Correlations</a>
                     </div>
                 </nav>
                 <div class="tab-content" id="nav-tabContent">
-                    <div class="tab-pane fade show active" id="nav-timeline" role="tabpanel" aria-labelledby="nav-timeline-tab">
+                    <div class="tab-pane fade show active" id="nav-timeline" role="tabpanel"
+                        aria-labelledby="nav-timeline-tab">
                         <div>
-                            <canvas baseChart
-                                    height="250"
-                                    [datasets]="data"
-                                    [labels]="labels"
-                                    [options]="options"
-                                    [legend]="legends"
-                                    [chartType]="type">
+                            <canvas baseChart height="250" [datasets]="data" [labels]="labels" [options]="options"
+                                [legend]="legends" [chartType]="type">
                             </canvas>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="nav-correlations" role="tabpanel" aria-labelledby="nav-correlations-tab">
+                    <div class="tab-pane fade" id="nav-correlations" role="tabpanel"
+                        aria-labelledby="nav-correlations-tab">
                         <div>
-                            <canvas baseChart
-                                    height="250"
-                                    [datasets]="data"
-                                    [labels]="labels"
-                                    [options]="options"
-                                    [legend]="legends"
-                                    [chartType]="type2">
+                            <canvas baseChart height="250" [datasets]="data" [labels]="labels" [options]="options"
+                                [legend]="legends" [chartType]="type2">
                             </canvas>
                         </div>
                     </div>
@@ -108,26 +112,53 @@
             <div class="p-1">
                 <nav>
                     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                        <a class="nav-item nav-link active" id="nav-demographic-tab" data-toggle="tab" href="#nav-demographic" role="tab" aria-controls="nav-demographic" aria-selected="true">Demographic</a>
+                        <a class="nav-item nav-link active" id="nav-demographic-tab" data-toggle="tab"
+                            href="#nav-demographic" role="tab" aria-controls="nav-demographic"
+                            aria-selected="true">Demographic</a>
                     </div>
                 </nav>
                 <div class="tab-content" id="nav-tabContent">
-                    <div class="tab-pane fade show active" id="nav-demographic" role="tabpanel" aria-labelledby="nav-demographic-tab">
+                    <div class="tab-pane fade show active" id="nav-demographic" role="tabpanel"
+                        aria-labelledby="nav-demographic-tab">
                         <div>
-                            <canvas baseChart
-                                    height="250"
-                                    [datasets]="data3"
-                                    [labels]="labels3"
-                                    [options]="options"
-                                    [legend]="legends"
-                                    [chartType]="type3">
+                            <canvas baseChart height="250" [datasets]="data3" [labels]="labels3" [options]="options"
+                                [legend]="legends" [chartType]="type3">
                             </canvas>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col" id='map' style="height: 600px;">
+        <div class="col">
+            <div class="row justify-content-center p-1">
+                <div class="btn-div">
+                    <button mat-raised-button class="actionBtnMap" (click)="centerMap()">
+                        <fa-icon [icon]="['fas', 'home']"></fa-icon>
+                    </button>
+                    <mat-slider
+                        [value]="scrollBarValue"
+                        (input)="scrollBarChange($event)"
+                        thumbLabel
+                        tickInterval="1"
+                        min="2010"
+                        max="2020">
+                    </mat-slider>
+                </div>
+            </div>
+            <div>
+                <div class="row" id='map' style="height: 550px; width: 100%;"></div>
+                <div id="controls" class="nicebox">
+                    <div id="legend">
+                        <div id="census-min">{{minLegendValue}}</div>
+                        <div class="color-key"><span id="data-caret">&#x25c6;</span></div>
+                        <div id="census-max">{{maxLegendValue}}</div>
+                    </div>
+                </div>
+                <div id="data-box" class="nicebox">
+                    <label id="data-label" for="data-value">sdf</label>
+                    <span id="data-value">50</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
