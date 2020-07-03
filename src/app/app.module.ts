@@ -1,13 +1,8 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { GoogleMapsModule } from '@angular/google-maps';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-import { FontAwesomeModule, FaIconLibrary } from '@fortawesome/angular-fontawesome';
-import { faHome, faThermometerThreeQuarters, faCloudRain, faCloudShowersHeavy, faExclamationTriangle, faExclamationCircle, faSkullCrossbones, faChartLine, faChartBar } from '@fortawesome/free-solid-svg-icons';
-import { MaterialModule } from './material-module';
-import { MAT_DATE_LOCALE } from '@angular/material/core';
-import { HttpClientModule } from '@angular/common/http';
-import { ChartsModule } from 'ng2-charts';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -19,6 +14,14 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HomeComponent } from './home/home.component';
 
+import { FontAwesomeModule, FaIconLibrary } from '@fortawesome/angular-fontawesome';
+import { faHome, faUsers, faThermometerThreeQuarters, faCloudRain, faCloudShowersHeavy, faExclamationTriangle,
+	 faExclamationCircle, faSkullCrossbones, faChartLine, faChartBar, faPlay, faPause, faCaretUp, faCaretDown } from '@fortawesome/free-solid-svg-icons';
+import { MaterialModule } from './material-module';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { HttpClientModule } from '@angular/common/http';
+import { ChartsModule } from 'ng2-charts';
+import { NgMultiSelectDropDownModule } from 'ng-multiselect-dropdown';
 
 @NgModule({
 	declarations: [
@@ -38,7 +41,10 @@ import { HomeComponent } from './home/home.component';
 		MaterialModule,
 		HttpClientModule,
 		ChartsModule,
-		GoogleMapsModule
+		GoogleMapsModule,
+		NgMultiSelectDropDownModule,
+		FormsModule,
+		ReactiveFormsModule
 	],
 	providers: [
 		{ provide: MAT_DATE_LOCALE, useValue: 'en-GB' }
@@ -47,6 +53,7 @@ import { HomeComponent } from './home/home.component';
 })
 export class AppModule {
 	constructor(private library: FaIconLibrary) {
-		library.addIcons(faHome, faThermometerThreeQuarters, faCloudRain, faCloudShowersHeavy, faExclamationTriangle, faExclamationCircle, faSkullCrossbones, faChartLine, faChartBar);
+		library.addIcons(faHome, faUsers, faThermometerThreeQuarters, faCloudRain, faCloudShowersHeavy, faExclamationTriangle,
+			 faExclamationCircle, faSkullCrossbones, faChartLine, faChartBar, faPlay, faPause, faCaretUp, faCaretDown);
 	}
 }

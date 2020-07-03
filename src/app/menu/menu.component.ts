@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { faHome, faUsers, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
 @Component({
 	selector: 'app-menu',
@@ -8,12 +7,7 @@ import { faHome, faUsers, faChartLine } from '@fortawesome/free-solid-svg-icons'
 })
 export class MenuComponent implements OnInit {
 
-	faHome = faHome;
-	faUsers = faUsers;
-	faChartLine = faChartLine;
-
 	constructor() { }
-
 	ngOnInit(): void {
 	}
 

@@ -1,7 +1,10 @@
 import { Component, OnInit, ViewChildren, QueryList } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
-import { state } from '@angular/animations';
 import { BaseChartDirective } from 'ng2-charts';
+import { IDropdownSettings } from 'ng-multiselect-dropdown';
+import { States } from "../data-structure/departmens-municipalities"
+import { StatesJsonService } from "../services/states-json.service";
+import { ValueTransformer } from '@angular/compiler/src/util';
 
 @Component({
 	selector: 'app-dashboard',
@@ -12,13 +15,27 @@ export class DashboardComponent implements OnInit {
 
 	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
+	States: States = new States();
+
 	map: google.maps.Map;
 	mapInfoWindow: google.maps.InfoWindow;
+	mapMarker: google.maps.Marker;
 	minLegendValue: number = 0;
 	maxLegendValue: number = 200;
 	scrollBarValue: number;
+	selectedFeature: google.maps.Data.Feature;
 
 	displayedColumns: string[] = ['icon', 'name', 'value', 'unit'];
+
+	statesDropDownList: Array<string>;
+	statesSelected: Array<string> = [];
+	statesDropdownSettings: IDropdownSettings;
+	statesDropDownListPlaceHolder = 'Select a state';
+
+	citiesDropDownList: Array<string>;
+	citiesSelected: Array<string> = [];
+	citiesDropdownSettings: IDropdownSettings;
+	citiesDropDownListPlaceHolder = 'Select a city';
 
 	Indicators: Array<Indicator> = [];
 	Indicators1: Array<Indicator> = [];
@@ -43,7 +60,7 @@ export class DashboardComponent implements OnInit {
 		pointHoverBorderColor: '#ff0000'
 	}];
 
-	constructor() {
+	constructor(private StatesJsonService: StatesJsonService,) {
 		this.initializeIndicator1();
 		this.initializeIndicator2();
 		this.Indicators1.forEach((value) => {
@@ -53,6 +70,13 @@ export class DashboardComponent implements OnInit {
 			this.Indicators.push(value);
 		});
 		this.dataSource.data = this.Indicators;
+	}
+
+	ngOnInit(): void {
+		this.initializeCharts();
+		this.initializeMap();
+		this.initializeDropDownStates();
+		this.initializeDropDownCities();
 	}
 
 	initializeIndicator1() {
@@ -203,10 +227,11 @@ export class DashboardComponent implements OnInit {
 		}
 		this.map = new google.maps.Map(document.getElementById('map'), mapOptions);
 
-		this.map.data.loadGeoJson('assets/Colombia.geo.json', { idPropertyName: 'State' }, function(features){
-			for(let i = 0; i < features.length; i++){
-				features[i].setProperty('Value', Math.floor(Math.random() * 200));
-			}
+		this.map.data.loadGeoJson('assets/Colombia.geo.json', { idPropertyName: 'State' }, function (features) {
+			// for(let i = 0; i < features.length; i++){
+			// 	features[i].setProperty('Value', Math.floor(Math.random() * 200));
+			// }
+			self.randomMapValues();
 		});
 
 		this.map.data.setStyle(function (feature) {
@@ -216,7 +241,6 @@ export class DashboardComponent implements OnInit {
 				let low = [151, 83, 34];
 				let high = [5, 69, 54];
 				let delta = (value - self.minLegendValue) / (self.maxLegendValue - self.minLegendValue);
-				// let delta = (value - 0) / (200 - 0);
 				for (var i = 0; i < 3; i++) {
 					color[i] = (high[i] - low[i]) * delta + low[i];
 				}
@@ -234,10 +258,12 @@ export class DashboardComponent implements OnInit {
 		});
 
 		this.map.data.addListener('click', function (event) {
-			// console.log(event.feature.getProperty('Name'));
 			self.map.setCenter(event.feature.getProperty('Center'));
 			self.map.setZoom(7);
-			console.log(event.feature.getId());
+			self.statesSelected = [];
+			self.statesSelected[0] = event.feature.getProperty('Name');
+			self.onStateSelect();
+			self.map.data.revertStyle(self.selectedFeature);
 		});
 
 		this.map.data.addListener('mouseover', function (event) {
@@ -267,20 +293,126 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
+	initializeDropDownStates() {
+		this.statesDropdownSettings = {
+			singleSelection: true,
+			textField: 'item_text',
+			allowSearchFilter: true,
+			maxHeight: 500
+		};
+		this.StatesJsonService.getStates().then(value => {
+			this.States = value;
+			this.statesDropDownList = [];
+			this.States.states.forEach(state => {
+				this.statesDropDownList.push(state.name);
+			});
+		});
+	}
+
+	initializeDropDownCities() {
+		this.citiesDropdownSettings = {
+			singleSelection: true,
+			textField: 'item_text',
+			allowSearchFilter: true,
+			maxHeight: 500
+		};
+	}
+
+	onStateSelect() {
+		if(this.selectedFeature){
+			this.map.data.revertStyle(this.selectedFeature);
+		}
+		this.citiesDropDownList = [];
+		this.citiesSelected = [];
+		this.States.states.forEach(state => {
+			if (this.statesSelected[0] == state.name) {
+				this.selectedFeature = this.map.data.getFeatureById(state.code);
+				let center = this.selectedFeature.getProperty('Center');
+				this.map.setCenter(center);
+				this.map.setZoom(7);
+				this.map.data.overrideStyle(this.selectedFeature, { strokeWeight: 5 });
+				state.municipalities.forEach(municipality => {
+					this.citiesDropDownList.push(municipality.name);
+				});
+			}
+		});
+		this.randomValues();
+	}
+
+	onStateDeselect() {
+		this.citiesDropDownList = [];
+		this.citiesSelected = [];
+		this.centerMap();
+		this.map.data.revertStyle(this.selectedFeature);
+		this.mapMarker.setMap(null);
+	}
+
+	onCitySelect() {
+		if(this.mapMarker){
+			this.mapMarker.setMap(null);
+		}
+		this.States.states.forEach(state => {
+			if (this.statesSelected[0] == state.name) {
+				state.municipalities.forEach(municipality => {
+					if (this.citiesSelected[0] == municipality.name){
+						this.map.setZoom(7);
+						let center = {
+							lat: municipality.lat,
+							lng: municipality.lng
+						};
+						this.mapMarker = new google.maps.Marker({
+							position: center,
+							map: this.map
+						});
+					}
+				});
+			}
+		});
+	}
+
+	onCityDeselect() {
+		this.mapMarker.setMap(null);
+	}
+
 	centerMap() {
 		this.map.setCenter({ lat: 4.5709, lng: -74.2973 });
 		this.map.setZoom(5);
 	}
 
-	addValue() {
-		this.labels.push('Added');
-		this.data[0].data.push(100 * Math.random());
-		this.data[1].data.push(100 * Math.random());
-
-		this.map.data.getFeatureById("05").setProperty('AfterClickColor', true);
-		this.map.data.getFeatureById("05").setProperty('Color', 'blue');
-
+	intervalID: NodeJS.Timeout;
+	playTimer() {
+		if(this.intervalID){
+			clearInterval(this.intervalID);
+		}
+		let self = this;
+		let startYear = 2010;
+		this.intervalID = setInterval(function () {
+			self.scrollBarValue = startYear;
+			console.log(self.scrollBarValue);
+			startYear = startYear + 1;
+			self.randomDashboard();
+			if (startYear > 2020) {
+				clearInterval(self.intervalID);
+			}
+		}, 1000);
 	}
+
+	pauseTimer() {
+		clearInterval(this.intervalID);
+	}
+
+	scrollBarChange() {
+		this.randomDashboard();
+	}
+
+	updateCharts() {
+		this.charts.forEach((chart) => {
+			chart.update();
+		});
+	}
+
+	statesArray = ["91", "05", "81", "08", "11", "13", "15", "17", "18", "85", "19", "20", "27", "23", "25",
+		"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
 
 	randomValues() {
 		this.Indicators1.forEach((item) => {
@@ -292,11 +424,11 @@ export class DashboardComponent implements OnInit {
 		this.Indicators.forEach((item) => {
 			item.value = Number((100 * Math.random()).toFixed(2));
 		});
-		for(let i = 0; i < this.data[0].data.length; i++){
+		for (let i = 0; i < this.data[0].data.length; i++) {
 			this.data[0].data[i] = 100 * Math.random();
 			this.data[1].data[i] = 100 * Math.random();
 		}
-		for(let i = 0; i < this.data3[0].data.length; i++){
+		for (let i = 0; i < this.data3[0].data.length; i++) {
 			this.data3[0].data[i] = 100 * Math.random();
 			this.data3[1].data[i] = 100 * Math.random();
 			this.data3[2].data[i] = 100 * Math.random();
@@ -305,36 +437,21 @@ export class DashboardComponent implements OnInit {
 		this.updateCharts();
 	}
 
-	updateCharts(){
-		this.charts.forEach((chart) => {
-			chart.update();
-		});
-	}
-
-	states = ["91", "05", "81", "08", "11", "13", "15", "17", "18", "85", "19", "20", "27", "23", "25",
-		"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
-
 	randomMapValues() {
 		let values = [];
-		for (let i = 0; i < this.states.length; i++) {
+		for (let i = 0; i < this.statesArray.length; i++) {
 			values.push(Math.floor(Math.random() * 200));
 		}
-		for (let i = 0; i < this.states.length; i++) {
-			this.map.data.getFeatureById(this.states[i]).setProperty('Value', values[i]);
+		for (let i = 0; i < this.statesArray.length; i++) {
+			this.map.data.getFeatureById(this.statesArray[i]).setProperty('Value', values[i]);
 		}
 		this.minLegendValue = Math.min(...values);
 		this.maxLegendValue = Math.max(...values);
 	}
 
-	scrollBarChange(event: { value: any; }){
-		this.scrollBarValue = event.value;
+	randomDashboard() {
 		this.randomMapValues();
 		this.randomValues();
-	}
-
-	ngOnInit(): void {
-		this.initializeCharts();
-		this.initializeMap();
 	}
 
 	buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {
@@ -355,6 +472,17 @@ export class DashboardComponent implements OnInit {
 			return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 		}
 	}
+	
+	addValue() {
+		this.labels.push('Added');
+		this.data[0].data.push(100 * Math.random());
+		this.data[1].data.push(100 * Math.random());
+
+		this.map.data.getFeatureById("05").setProperty('AfterClickColor', true);
+		this.map.data.getFeatureById("05").setProperty('Color', 'blue');
+
+	}
+
 }
 
 export class Indicator {

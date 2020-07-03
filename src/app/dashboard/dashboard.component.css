@@ -2,7 +2,7 @@
     width: 10em;
 }
 .actionBtnMap{
-    width: 1em;
+    margin: 2px;
 }
 .tab-content>.tab-pane {
     display: block;
@@ -16,8 +16,8 @@
     animation: slide-down 0.5s ease-out;
 }
 
-mat-slider {
-    width: 200px;
+.yearSlider{
+    width: 100%;
 }
 
 @keyframes slide-down {
@@ -38,13 +38,13 @@ mat-slider {
     border: #343a40;
 }
 #controls {
-    top: 60px;
+    top: 5px;
     left: 5px;
     width: 50%;
     height: 45px;
 }
 #data-box {
-    top: 100px;
+    top: 55px;
     left: 5px;
     height: 45px;
     line-height: 35px;

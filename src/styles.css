@@ -15,3 +15,22 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .nav-link:hover{
     color: #ffffff;
 }
+
+.selected-item{
+    background-color: #666666!important;
+    border-color: #666666!important;
+    margin: 2px!important;
+}
+
+.mat-slider-thumb-label {
+    transform: rotate(45deg) !important;
+    border-radius: 50% 50% 0 !important;
+  }
+
+.mat-slider-thumb {
+    transform: scale(0) !important;
+}
+
+.mat-slider-thumb-label-text {
+    opacity: 1 !important;
+}

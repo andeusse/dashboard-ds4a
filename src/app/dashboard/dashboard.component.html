@@ -1,25 +1,48 @@
 <div class="container-fluid p-3 my-3 bg-dark text-light">
     <div class="row justify-content-center">
-        <div class="p-2 btn-div">
-            <button mat-raised-button class="actionBtn" (click)="addValue()">
-                <fa-icon [icon]="['fas', 'home']"></fa-icon> Add
+        <div class="col-md-3 text-center">
+            <img class="mx-auto" src="assets/images/DataCOP.png" height="40">
+            <button mat-raised-button class="actionBtnMap" (click)="centerMap()">
+                <fa-icon [icon]="['fas', 'home']"></fa-icon>
             </button>
+            <button mat-raised-button class="actionBtnMap" (click)="playTimer()">
+                <fa-icon [icon]="['fas', 'play']"></fa-icon>
+            </button>
+            <button mat-raised-button class="actionBtnMap" (click)="pauseTimer()">
+                <fa-icon [icon]="['fas', 'pause']"></fa-icon>
+            </button>
+            <img class="mx-auto" src="assets/images/DataCOP.png" height="40">
         </div>
-        <div class="p-2 btn-div">
-            <button mat-raised-button class="actionBtn" (click)="randomValues()">Random values</button>
+        <div class="col-md-3" style="width: 100%;">
+            <mat-slider class="yearSlider"
+                [value]="scrollBarValue"
+                (input)="scrollBarChange()"
+                [(ngModel)]="scrollBarValue"
+                thumbLabel
+                tickInterval="1"
+                min="2010"
+                max="2020">
+            </mat-slider>
         </div>
-        <div class="p-2 btn-div">
-            <button mat-raised-button class="actionBtn" (click)="randomMapValues()">Random map</button>
+        <div class="col-md-3">
+            <ng-multiselect-dropdown
+                [placeholder]="statesDropDownListPlaceHolder"
+                [data]="statesDropDownList"
+                [(ngModel)]="statesSelected"
+                [settings]="statesDropdownSettings"
+                (onSelect)="onStateSelect()"
+                (onDeSelect)="onStateDeselect()">
+            </ng-multiselect-dropdown>
         </div>
-        <div class="p-2">
-            <mat-form-field>
-                <mat-label>Choose a date</mat-label>
-                <input matInput [matDatepicker]="picker">
-                <mat-datepicker-toggle matSuffix [for]="picker">
-                </mat-datepicker-toggle>
-                <mat-datepicker #picker>
-                </mat-datepicker>
-            </mat-form-field>
+        <div class="col-md-3">
+            <ng-multiselect-dropdown
+                [placeholder]="citiesDropDownListPlaceHolder"
+                [data]="citiesDropDownList"
+                [(ngModel)]="citiesSelected"
+                [settings]="citiesDropdownSettings"
+                (onSelect)="onCitySelect()"
+                (onDeSelect)="onCityDeselect()">
+            </ng-multiselect-dropdown>
         </div>
     </div>
     <div>
@@ -37,7 +60,6 @@
             </div>
         </div>
     </div>
-
     <!-- <div>
         <div class="row card-deck mb-2 text-center">
             <div *ngFor="let item of Indicators2" class="bg-light text-dark card col-md-3">  
@@ -50,7 +72,6 @@
             </div>
         </div>
     </div> -->
-
     <!-- <div class="row">
         <div class="col-md-12 mat-elevation-z8">
             <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="Indicators">
@@ -77,8 +98,7 @@
             </table>
         </div>
     </div> -->
-
-    <div class="row p-3">
+    <div class="row">
         <div class="col-md-6">
             <div class="p-1">
                 <nav>
@@ -129,24 +149,9 @@
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="row justify-content-center p-1">
-                <div class="btn-div">
-                    <button mat-raised-button class="actionBtnMap" (click)="centerMap()">
-                        <fa-icon [icon]="['fas', 'home']"></fa-icon>
-                    </button>
-                    <mat-slider
-                        [value]="scrollBarValue"
-                        (input)="scrollBarChange($event)"
-                        thumbLabel
-                        tickInterval="1"
-                        min="2010"
-                        max="2020">
-                    </mat-slider>
-                </div>
-            </div>
+        <div class="col-md-6">
             <div>
-                <div class="row" id='map' style="height: 550px; width: 100%;"></div>
+                <div class="row" id='map' style="height: 600px; width: 100%;"></div>
                 <div id="controls" class="nicebox">
                     <div id="legend">
                         <div id="census-min">{{minLegendValue}}</div>
