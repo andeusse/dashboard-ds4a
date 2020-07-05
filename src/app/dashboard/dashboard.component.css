@@ -39,13 +39,13 @@
 }
 #controls {
     top: 5px;
-    left: 5px;
-    width: 50%;
+    left: 20px;
+    width: 80%;
     height: 45px;
 }
 #data-box {
     top: 55px;
-    left: 5px;
+    left: 20px;
     height: 45px;
     line-height: 35px;
     display: none;

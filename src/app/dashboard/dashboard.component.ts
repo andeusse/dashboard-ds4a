@@ -4,7 +4,8 @@ import { BaseChartDirective } from 'ng2-charts';
 import { IDropdownSettings } from 'ng-multiselect-dropdown';
 import { States } from "../data-structure/departmens-municipalities"
 import { StatesJsonService } from "../services/states-json.service";
-import { ValueTransformer } from '@angular/compiler/src/util';
+import { Indicator } from '../data-structure/indicator';
+import { top10Mun } from '../data-structure/top10-mun';
 
 @Component({
 	selector: 'app-dashboard',
@@ -15,6 +16,8 @@ export class DashboardComponent implements OnInit {
 
 	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
+	intervalID: NodeJS.Timeout;
+	
 	States: States = new States();
 
 	map: google.maps.Map;
@@ -25,7 +28,7 @@ export class DashboardComponent implements OnInit {
 	scrollBarValue: number;
 	selectedFeature: google.maps.Data.Feature;
 
-	displayedColumns: string[] = ['icon', 'name', 'value', 'unit'];
+	displayedColumns: string[] = ['municipality', 'value'];
 
 	statesDropDownList: Array<string>;
 	statesSelected: Array<string> = [];
@@ -37,10 +40,9 @@ export class DashboardComponent implements OnInit {
 	citiesDropdownSettings: IDropdownSettings;
 	citiesDropDownListPlaceHolder = 'Select a city';
 
-	Indicators: Array<Indicator> = [];
-	Indicators1: Array<Indicator> = [];
-	Indicators2: Array<Indicator> = [];
-	dataSource = new MatTableDataSource<Indicator>([]);
+	_KPI: Array<Indicator> = [];
+	Top10Municipalities: Array<top10Mun> = [];
+	dataSource = new MatTableDataSource<top10Mun>([]);
 
 	labels = [];
 	labels3 = [];
@@ -61,44 +63,24 @@ export class DashboardComponent implements OnInit {
 	}];
 
 	constructor(private StatesJsonService: StatesJsonService,) {
-		this.initializeIndicator1();
-		this.initializeIndicator2();
-		this.Indicators1.forEach((value) => {
-			this.Indicators.push(value);
-		});
-		this.Indicators2.forEach((value) => {
-			this.Indicators.push(value);
-		});
-		this.dataSource.data = this.Indicators;
 	}
 
 	ngOnInit(): void {
+		this.initializeKPI();
 		this.initializeCharts();
 		this.initializeMap();
 		this.initializeDropDownStates();
 		this.initializeDropDownCities();
+		this.scrollBarValue = 2020;
 	}
 
-	initializeIndicator1() {
-		let temp = new Indicator(0, "Laboratory confirmed", 100, "exclamation-circle", "-");
-		this.Indicators1.push(temp);
-		temp = new Indicator(1, "Epidemiological link", 100, "exclamation-circle", "-");
-		this.Indicators1.push(temp);
-		temp = new Indicator(2, "Probable", 100, "exclamation-circle", "-");
-		this.Indicators1.push(temp);
-		temp = new Indicator(3, "Confirmed deaths", 100, "skull-crossbones", "-");
-		this.Indicators1.push(temp);
-	}
-
-	initializeIndicator2() {
-		let temp = new Indicator(4, "Temperature", 100, "thermometer-three-quarters", " °C");
-		this.Indicators2.push(temp);
-		temp = new Indicator(5, "Precipitation", 100, "cloud-rain", " mm");
-		this.Indicators2.push(temp);
-		temp = new Indicator(6, "Humidity", 100, "cloud-showers-heavy", " %");
-		this.Indicators2.push(temp);
-		temp = new Indicator(7, "Prob dengue outbreak", 100, "exclamation-triangle", " %");
-		this.Indicators2.push(temp);
+	initializeKPI() {
+		let temp = new Indicator(0, "Dengue", 100, 2.1, "exclamation-triangle");
+		this._KPI.push(temp);
+		temp = new Indicator(1, "Hemorrhagic Dengue", 100, -5, "exclamation-triangle");
+		this._KPI.push(temp);
+		temp = new Indicator(2, "Deaths by Dengue", 100, 8, "skull-crossbones");
+		this._KPI.push(temp);
 	}
 
 	initializeCharts() {
@@ -143,6 +125,7 @@ export class DashboardComponent implements OnInit {
 				lat: 4.5709,
 				lng: -74.2973
 			},
+			// draggable: false,
 			mapTypeId: google.maps.MapTypeId.ROADMAP,
 			styles: [
 				{ elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
@@ -298,7 +281,7 @@ export class DashboardComponent implements OnInit {
 			singleSelection: true,
 			textField: 'item_text',
 			allowSearchFilter: true,
-			maxHeight: 500
+			maxHeight: 300
 		};
 		this.StatesJsonService.getStates().then(value => {
 			this.States = value;
@@ -306,6 +289,7 @@ export class DashboardComponent implements OnInit {
 			this.States.states.forEach(state => {
 				this.statesDropDownList.push(state.name);
 			});
+			this.randomTable();
 		});
 	}
 
@@ -314,7 +298,7 @@ export class DashboardComponent implements OnInit {
 			singleSelection: true,
 			textField: 'item_text',
 			allowSearchFilter: true,
-			maxHeight: 500
+			maxHeight: 300
 		};
 	}
 
@@ -379,7 +363,6 @@ export class DashboardComponent implements OnInit {
 		this.map.setZoom(5);
 	}
 
-	intervalID: NodeJS.Timeout;
 	playTimer() {
 		if(this.intervalID){
 			clearInterval(this.intervalID);
@@ -388,7 +371,6 @@ export class DashboardComponent implements OnInit {
 		let startYear = 2010;
 		this.intervalID = setInterval(function () {
 			self.scrollBarValue = startYear;
-			console.log(self.scrollBarValue);
 			startYear = startYear + 1;
 			self.randomDashboard();
 			if (startYear > 2020) {
@@ -411,18 +393,10 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	statesArray = ["91", "05", "81", "08", "11", "13", "15", "17", "18", "85", "19", "20", "27", "23", "25",
-		"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
-
 	randomValues() {
-		this.Indicators1.forEach((item) => {
-			item.value = Number((100 * Math.random()).toFixed(2));
-		});
-		this.Indicators2.forEach((item) => {
-			item.value = Number((100 * Math.random()).toFixed(2));
-		});
-		this.Indicators.forEach((item) => {
-			item.value = Number((100 * Math.random()).toFixed(2));
+		this._KPI.forEach((item) => {
+			item.value = Number((100 * Math.random()).toFixed(0));
+			item.tendency = Number((20 * Math.random() - 10).toFixed(1));
 		});
 		for (let i = 0; i < this.data[0].data.length; i++) {
 			this.data[0].data[i] = 100 * Math.random();
@@ -438,12 +412,16 @@ export class DashboardComponent implements OnInit {
 	}
 
 	randomMapValues() {
+		
+		let statesArray = ["91", "05", "81", "08", "11", "13", "15", "17", "18", "85", "19", "20", "27", "23", "25",
+		"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
+
 		let values = [];
-		for (let i = 0; i < this.statesArray.length; i++) {
+		for (let i = 0; i < statesArray.length; i++) {
 			values.push(Math.floor(Math.random() * 200));
 		}
-		for (let i = 0; i < this.statesArray.length; i++) {
-			this.map.data.getFeatureById(this.statesArray[i]).setProperty('Value', values[i]);
+		for (let i = 0; i < statesArray.length; i++) {
+			this.map.data.getFeatureById(statesArray[i]).setProperty('Value', values[i]);
 		}
 		this.minLegendValue = Math.min(...values);
 		this.maxLegendValue = Math.max(...values);
@@ -452,6 +430,20 @@ export class DashboardComponent implements OnInit {
 	randomDashboard() {
 		this.randomMapValues();
 		this.randomValues();
+		this.randomTable();
+	}
+
+	randomTable(){
+		this.Top10Municipalities = [];
+		for(let i = 0; i < 10; i++){
+			let randomStateNumber = Math.floor(this.States.states.length * Math.random());
+			let randomMunNumber = Math.floor(this.States.states[randomStateNumber].municipalities.length * Math.random());
+			let randomMun = this.States.states[randomStateNumber].municipalities[randomMunNumber].name;
+			let randomValue = Math.floor(180 * Math.random() + 20);
+			this.Top10Municipalities.push(new top10Mun(this.States.states[randomStateNumber].name, randomMun, randomValue))
+		}
+		this.Top10Municipalities.sort((a, b) => (a.value < b.value) ? 1 : -1);
+		this.dataSource.data = this. Top10Municipalities;
 	}
 
 	buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {
@@ -483,19 +475,4 @@ export class DashboardComponent implements OnInit {
 
 	}
 
-}
-
-export class Indicator {
-	public id: number;
-	public title: string;
-	public value: number;
-	public icon: string;
-	public unit: string;
-	constructor(id: number, title: string, value: number, icon: string = "", unit: string = "") {
-		this.id = id;
-		this.title = title;
-		this.value = value;
-		this.icon = icon;
-		this.unit = unit;
-	}
 }
