@@ -16,12 +16,12 @@
         <div class="col-md-3" style="width: 100%;">
             <mat-slider class="yearSlider"
                 [value]="scrollBarValue"
-                (input)="scrollBarChange()"
+                (input)="scrollBarChange($event)"
                 [(ngModel)]="scrollBarValue"
                 thumbLabel
                 tickInterval="1"
-                min="2010"
-                max="2020">
+                min="{{minScrollBarYear}}"
+                max="{{maxScrollBarYear}}">
             </mat-slider>
         </div>
         <div class="col-md-3">
@@ -67,7 +67,7 @@
                 <div>
                     <span style="height: 100%; display: flex; align-items: center; font-size: xx-large; text-align: center;">
                         DENG&nbsp;
-                        <fa-icon id="dengometer-icon" [icon]="['fas', 'exclamation-circle']" style="font-size: 50px;"></fa-icon>
+                        <fa-icon id="dengometer-icon" [icon]="['fas', 'exclamation-circle']" style="font-size: 50px; color: green;"></fa-icon>
                         &nbsp;METER
                     </span>
                 </div>
@@ -86,11 +86,11 @@
                 <div class="col-md-12 mat-elevation-z8">
                     <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="Top10Municipalities">
                         <ng-container matColumnDef="municipality">
-                            <th mat-header-cell *matHeaderCellDef class="text-light"> MUNICIPALITY </th>
+                            <th mat-header-cell *matHeaderCellDef class="text-light" style="font-size: large;"> MUNICIPALITY </th>
                             <td mat-cell *matCellDef="let item" class="text-light"> {{item.municipality}} <small class="text-right"> ({{item.state}})</small></td>
                         </ng-container>
                         <ng-container matColumnDef="value">
-                            <th mat-header-cell *matHeaderCellDef class="text-light"> VALUE </th>
+                            <th mat-header-cell *matHeaderCellDef class="text-light" style="font-size: large;"> VALUE </th>
                             <td mat-cell *matCellDef="let item" class="text-light"> {{item.value}} </td>
                         </ng-container>
                         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
@@ -99,6 +99,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-md-5">
             <div class="p-1">
                 <nav>
@@ -108,37 +109,38 @@
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-timelineM"
                             role="tab" aria-controls="nav-timeline" aria-selected="false">Timeline (Monthly)</a>
                         <a class="nav-item nav-link" id="nav-correlations-tab" data-toggle="tab" href="#nav-correlations" 
-                            role="tab" aria-controls="nav-correlations" aria-selected="false">Correlations</a>
+                            role="tab" aria-controls="nav-correlations" aria-selected="false">Forecasting</a>
                     </div>
                 </nav>
                 <div class="tab-content" id="nav-tabContent">
                     <div class="tab-pane fade show active" id="nav-timelineW" role="tabpanel"
                         aria-labelledby="nav-timeline-tab">
                         <div>
-                            <canvas baseChart height="550" [datasets]="data" [labels]="labels" [options]="options"
-                                [legend]="legends" [chartType]="type">
+                            <canvas baseChart height="550" [datasets]="weeklyData" [labels]="weeklyLabels" [options]="weeklyOptions"
+                                [legend]="weeklyLegends" [chartType]="weeklyType">
                             </canvas>
                         </div>
                     </div>
                     <div class="tab-pane fade" id="nav-timelineM" role="tabpanel"
                         aria-labelledby="nav-timeline-tab">
                         <div>
-                            <canvas baseChart height="550" [datasets]="data" [labels]="labels" [options]="options"
-                                [legend]="legends" [chartType]="type">
+                            <canvas baseChart height="550" [datasets]="monthlyData" [labels]="monthlyLabels" [options]="monthlyOptions"
+                                [legend]="monthlyLegends" [chartType]="monthlyType">
                             </canvas>
                         </div>
                     </div>
                     <div class="tab-pane fade" id="nav-correlations" role="tabpanel"
                         aria-labelledby="nav-correlations-tab">
                         <div>
-                            <canvas baseChart height="550" [datasets]="data" [labels]="labels" [options]="options"
-                                [legend]="legends" [chartType]="type2">
+                            <canvas baseChart height="550" [datasets]="forecastingData" [options]="forecastingOptions"
+                                [legend]="forecastingLegends" [chartType]="forecastingType">
                             </canvas>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
         <div class="col-md-4">
             <div>
                 <div id='map' style="height: 600px; width: 100%;"></div>

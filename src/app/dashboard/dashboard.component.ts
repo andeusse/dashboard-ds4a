@@ -6,6 +6,7 @@ import { States } from "../data-structure/departmens-municipalities"
 import { StatesJsonService } from "../services/states-json.service";
 import { Indicator } from '../data-structure/indicator';
 import { top10Mun } from '../data-structure/top10-mun';
+import { MatSliderChange } from '@angular/material/slider';
 
 @Component({
 	selector: 'app-dashboard',
@@ -17,16 +18,19 @@ export class DashboardComponent implements OnInit {
 	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
 	intervalID: NodeJS.Timeout;
-	
+
 	States: States = new States();
 
 	map: google.maps.Map;
 	mapInfoWindow: google.maps.InfoWindow;
 	mapMarker: google.maps.Marker;
-	minLegendValue: number = 0;
-	maxLegendValue: number = 200;
-	scrollBarValue: number;
+	minLegendValue: number;
+	maxLegendValue: number;
 	selectedFeature: google.maps.Data.Feature;
+
+	scrollBarValue: number;
+	minScrollBarYear: number = 2010;
+	maxScrollBarYear: number = 2020;
 
 	displayedColumns: string[] = ['municipality', 'value'];
 
@@ -44,34 +48,36 @@ export class DashboardComponent implements OnInit {
 	Top10Municipalities: Array<top10Mun> = [];
 	dataSource = new MatTableDataSource<top10Mun>([]);
 
-	labels = [];
-	labels3 = [];
-	data = [];
-	data3 = [];
-	legends = true;
-	options = {};
-	type = 'bar';
-	type2 = 'line';
-	type3 = 'horizontalBar';
+	weeklyData = [];
+	weeklyLabels = [];
+	weeklyOptions = {};
+	weeklyLegends = true;
+	weeklyType = 'bar';
 
-	public chartColors = [{
-		backgroundColor: 'transparent',
-		borderColor: 'transparent',
-		pointBackgroundColor: '#ff0000',
-		pointHoverBackgroundColor: '#0000ff',
-		pointHoverBorderColor: '#ff0000'
-	}];
+	monthlyData = [];
+	monthlyLabels = [];
+	monthlyOptions = {};
+	monthlyLegends = true;
+	monthlyType = 'bar';
+
+	forecastingData = [];
+	forecastingLabels = [];
+	forecastingOptions = {};
+	forecastingLegends = true;
+	forecastingType = 'line';
 
 	constructor(private StatesJsonService: StatesJsonService,) {
 	}
 
 	ngOnInit(): void {
+		this.scrollBarValue = 2020;
 		this.initializeKPI();
-		this.initializeCharts();
+		this.initializeMonthlyChart();
+		this.initializeWeeklyChart();
+		this.initializeForecastingChart();
 		this.initializeMap();
 		this.initializeDropDownStates();
 		this.initializeDropDownCities();
-		this.scrollBarValue = 2020;
 	}
 
 	initializeKPI() {
@@ -83,27 +89,174 @@ export class DashboardComponent implements OnInit {
 		this._KPI.push(temp);
 	}
 
-	initializeCharts() {
-		this.options = {
+	initializeWeeklyChart() {
+		this.weeklyOptions = {
 			scaleShowVerticalLines: false,
 			responsive: true,
 			maintainAspectRatio: false,
 			legend: {
 				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
 			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white'
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			}
 		};
-		this.labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-		this.labels3 = ['0 - 4', '5 - 17', '18 - 59', '60+']
-		this.legends = true;
-		this.data = [
-			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Series A', fill: false },
-			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Series B' }
+		this.weeklyData = [];
+		this.weeklyLabels = [];
+		let data = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				this.weeklyLabels.push(valueDate);
+				data.push(Math.floor(20 * Math.random() + 1));
+			}
+			else {
+				break;
+			}
+		}
+		this.weeklyData = [
+			{ data: data, label: 'Dengue' }
 		];
-		this.data3 = [
-			{ data: [5, 8, 50, 13], label: 'Laboratory confirmed' },
-			{ data: [16, 25, 80, 5], label: 'Epidemiological' },
-			{ data: [5, 5, 150, 30], label: 'Probable' },
-			{ data: [2, 3, 15, 8], label: 'Deaths' }
+	}
+
+	initializeMonthlyChart() {
+		this.monthlyOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			}
+		};
+		this.monthlyLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+		this.monthlyData = [
+			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Dengue' },
+			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Hemorrhagic Dengue' },
+			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Deaths by Dengue' }
+		];
+	}
+
+	initializeForecastingChart() {
+		this.forecastingOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white',
+						maxRotation: 45,
+						minRotation: 45
+					}
+				}],
+				yAxes: [{
+					id: 'default',
+					display: true,
+					ticks: {
+						suggestedMin: 0,
+						fontColor: 'white'
+					},
+				}]
+			},
+			elements: {
+				point:{
+					radius: 0
+				}
+			}
+		};
+		this.forecastingData = [];
+		this.forecastingLabels = [];
+		let valueDate: Date;
+		let data = [];
+		let dataForecast = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i <= 53; i++) {
+			valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				this.forecastingLabels.push(valueDate);
+				let randomValue = Math.floor(20 * Math.random() + 1);
+				data.push({ x: valueDate, y: randomValue });
+			}
+			else {
+				dataForecast.push(data[data.length - 1]);
+				break;
+			}
+		}
+
+		startDate = valueDate;
+		for (let i = 0; i < 8; i++) {
+			valueDate = addDays(startDate, i * 7);
+			this.forecastingLabels.push(valueDate);
+			dataForecast.push({ x: valueDate, y: Math.floor(20 * Math.random() + 1) });
+		}
+
+		let dataForecast1 = [];
+		let dataForecast2 = [];
+
+		for (let i = 0; i < dataForecast.length; i++) {
+			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 1 });
+			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 1 });
+		}
+
+		let confidenceIntervalColor = '#ccc';
+
+		this.forecastingData = [
+			{ data: data, label: 'Dengue', fill: false, yAxisID: 'default' },
+			{ data: dataForecast, label: 'Forecast', fill: false, yAxisID: 'default' },
+			{
+				data: dataForecast1, label: '+ Confidence Interval', fill: false, yAxisID: 'default',
+				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+			},
+			{
+				data: dataForecast2, label: '- Confidence Interval', fill: false, yAxisID: 'default',
+				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+			}
 		];
 	}
 
@@ -303,7 +456,7 @@ export class DashboardComponent implements OnInit {
 	}
 
 	onStateSelect() {
-		if(this.selectedFeature){
+		if (this.selectedFeature) {
 			this.map.data.revertStyle(this.selectedFeature);
 		}
 		this.citiesDropDownList = [];
@@ -320,7 +473,7 @@ export class DashboardComponent implements OnInit {
 				});
 			}
 		});
-		this.randomValues();
+		this.randomKPIValues();
 	}
 
 	onStateDeselect() {
@@ -332,13 +485,13 @@ export class DashboardComponent implements OnInit {
 	}
 
 	onCitySelect() {
-		if(this.mapMarker){
+		if (this.mapMarker) {
 			this.mapMarker.setMap(null);
 		}
 		this.States.states.forEach(state => {
 			if (this.statesSelected[0] == state.name) {
 				state.municipalities.forEach(municipality => {
-					if (this.citiesSelected[0] == municipality.name){
+					if (this.citiesSelected[0] == municipality.name) {
 						this.map.setZoom(7);
 						let center = {
 							lat: municipality.lat,
@@ -364,7 +517,7 @@ export class DashboardComponent implements OnInit {
 	}
 
 	playTimer() {
-		if(this.intervalID){
+		if (this.intervalID) {
 			clearInterval(this.intervalID);
 		}
 		let self = this;
@@ -383,7 +536,8 @@ export class DashboardComponent implements OnInit {
 		clearInterval(this.intervalID);
 	}
 
-	scrollBarChange() {
+	scrollBarChange(event: MatSliderChange) {
+		this.scrollBarValue = event.value;
 		this.randomDashboard();
 	}
 
@@ -393,28 +547,96 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	randomValues() {
+	randomKPIValues() {
 		this._KPI.forEach((item) => {
 			item.value = Number((100 * Math.random()).toFixed(0));
 			item.tendency = Number((20 * Math.random() - 10).toFixed(1));
 		});
-		for (let i = 0; i < this.data[0].data.length; i++) {
-			this.data[0].data[i] = 100 * Math.random();
-			this.data[1].data[i] = 100 * Math.random();
+	}
+
+	randomCharts() {
+		for (let i = 0; i < this.monthlyData[0].data.length; i++) {
+			this.monthlyData[0].data[i] = 100 * Math.random();
+			this.monthlyData[1].data[i] = 100 * Math.random();
+			this.monthlyData[2].data[i] = 100 * Math.random();
 		}
-		for (let i = 0; i < this.data3[0].data.length; i++) {
-			this.data3[0].data[i] = 100 * Math.random();
-			this.data3[1].data[i] = 100 * Math.random();
-			this.data3[2].data[i] = 100 * Math.random();
-			this.data3[3].data[i] = 100 * Math.random();
+
+		this.weeklyData = [];
+		this.weeklyLabels = [];
+		let data = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				this.weeklyLabels.push(valueDate);
+				data.push(Math.floor(20 * Math.random() + 1));
+			}
+			else {
+				break;
+			}
 		}
+		this.weeklyData = [
+			{ data: data, label: 'Dengue' }
+		];
+
+		this.forecastingData = [];
+		this.forecastingLabels = [];
+		let valueDate: Date;
+		data = [];
+		let dataForecast = [];
+		startDate = getFirstSunday(this.scrollBarValue);
+		nowDate = new Date();
+		for (let i = 0; i <= 53; i++) {
+			valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				this.forecastingLabels.push(valueDate);
+				let randomValue = Math.floor(20 * Math.random() + 1);
+				data.push({ x: valueDate, y: randomValue });
+			}
+			else {
+				dataForecast.push(data[data.length - 1]);
+				break;
+			}
+		}
+
+		startDate = valueDate;
+		for (let i = 0; i < 8; i++) {
+			valueDate = addDays(startDate, i * 7);
+			this.forecastingLabels.push(valueDate);
+			dataForecast.push({ x: valueDate, y: Math.floor(20 * Math.random() + 1) });
+		}
+
+		let dataForecast1 = [];
+		let dataForecast2 = [];
+
+		for (let i = 0; i < dataForecast.length; i++) {
+			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 1 });
+			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 1 });
+		}
+
+		let confidenceIntervalColor = '#ccc';
+
+		this.forecastingData = [
+			{ data: data, label: 'Dengue', fill: false, yAxisID: 'default' },
+			{ data: dataForecast, label: 'Forecast', fill: false, yAxisID: 'default' },
+			{
+				data: dataForecast1, label: '+ Confidence Interval', fill: false, yAxisID: 'default',
+				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+			},
+			{
+				data: dataForecast2, label: '- Confidence Interval', fill: false, yAxisID: 'default',
+				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+			}
+		];
+
 		this.updateCharts();
 	}
 
 	randomMapValues() {
-		
+
 		let statesArray = ["91", "05", "81", "08", "11", "13", "15", "17", "18", "85", "19", "20", "27", "23", "25",
-		"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
+			"94", "44", "95", "41", "47", "50", "52", "54", "86", "63", "66", "88", "68", "70", "73", "76", "97", "99"];
 
 		let values = [];
 		for (let i = 0; i < statesArray.length; i++) {
@@ -429,13 +651,15 @@ export class DashboardComponent implements OnInit {
 
 	randomDashboard() {
 		this.randomMapValues();
-		this.randomValues();
+		this.randomKPIValues();
 		this.randomTable();
+		this.randomDengometer();
+		this.randomCharts();
 	}
 
-	randomTable(){
+	randomTable() {
 		this.Top10Municipalities = [];
-		for(let i = 0; i < 10; i++){
+		for (let i = 0; i < 10; i++) {
 			let randomStateNumber = Math.floor(this.States.states.length * Math.random());
 			let randomMunNumber = Math.floor(this.States.states[randomStateNumber].municipalities.length * Math.random());
 			let randomMun = this.States.states[randomStateNumber].municipalities[randomMunNumber].name;
@@ -443,7 +667,20 @@ export class DashboardComponent implements OnInit {
 			this.Top10Municipalities.push(new top10Mun(this.States.states[randomStateNumber].name, randomMun, randomValue))
 		}
 		this.Top10Municipalities.sort((a, b) => (a.value < b.value) ? 1 : -1);
-		this.dataSource.data = this. Top10Municipalities;
+		this.dataSource.data = this.Top10Municipalities;
+	}
+
+	randomDengometer() {
+		let randomValue = Math.floor(1000 * Math.random());
+		let color = 'green';
+		if (randomValue > 750) {
+			color = 'red';
+		} else if (randomValue > 500) {
+			color = 'orange';
+		} else if (randomValue > 250) {
+			color = '#FFDB58';
+		}
+		document.getElementById('dengometer-icon').style.color = color;
 	}
 
 	buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {
@@ -464,15 +701,22 @@ export class DashboardComponent implements OnInit {
 			return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 		}
 	}
-	
-	addValue() {
-		this.labels.push('Added');
-		this.data[0].data.push(100 * Math.random());
-		this.data[1].data.push(100 * Math.random());
+}
 
-		this.map.data.getFeatureById("05").setProperty('AfterClickColor', true);
-		this.map.data.getFeatureById("05").setProperty('Color', 'blue');
+function addDays(date: Date, days: number) {
+	let result = new Date(date);
+	result.setDate(result.getDate() + days);
+	return result;
+}
 
+function getFirstSunday(year: number) {
+	let date = new Date(year, 0, 1, 0, 0, 0, 0);
+	for (let i = 0; i < 6; i++) {
+		if (date.getDay() == 0) {
+			break;
+		} else {
+			date = addDays(date, -1);
+		}
 	}
-
+	return date;
 }
