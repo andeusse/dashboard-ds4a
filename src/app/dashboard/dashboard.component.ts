@@ -48,23 +48,23 @@ export class DashboardComponent implements OnInit {
 	Top10Municipalities: Array<top10Mun> = [];
 	dataSource = new MatTableDataSource<top10Mun>([]);
 
+	forecastingData = [];
+	forecastingLabels = [];
+	forecastingOptions = {};
+	forecastingLegends = true;
+	forecastingType = 'line';
+
 	weeklyData = [];
 	weeklyLabels = [];
 	weeklyOptions = {};
 	weeklyLegends = true;
-	weeklyType = 'bar';
+	weeklyType = 'line';
 
 	monthlyData = [];
 	monthlyLabels = [];
 	monthlyOptions = {};
 	monthlyLegends = true;
 	monthlyType = 'bar';
-
-	forecastingData = [];
-	forecastingLabels = [];
-	forecastingOptions = {};
-	forecastingLegends = true;
-	forecastingType = 'line';
 
 	constructor(private StatesJsonService: StatesJsonService,) {
 	}
@@ -87,87 +87,6 @@ export class DashboardComponent implements OnInit {
 		this._KPI.push(temp);
 		temp = new Indicator(2, "Deaths by Dengue", 100, 8, "skull-crossbones");
 		this._KPI.push(temp);
-	}
-
-	initializeWeeklyChart() {
-		this.weeklyOptions = {
-			scaleShowVerticalLines: false,
-			responsive: true,
-			maintainAspectRatio: false,
-			legend: {
-				position: 'top',
-				labels: {
-					fontColor: 'white'
-				}
-			},
-			scales: {
-				xAxes: [{
-					type: 'time',
-					time: {
-						tooltipFormat: 'DD/MM/YYYY',
-						distribution: 'series'
-					},
-					ticks: {
-						fontColor: 'white'
-					}
-				}],
-				yAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}]
-			}
-		};
-		this.weeklyData = [];
-		this.weeklyLabels = [];
-		let data = [];
-		let startDate = getFirstSunday(this.scrollBarValue);
-		let nowDate = new Date();
-		for (let i = 0; i < 53; i++) {
-			let valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.weeklyLabels.push(valueDate);
-				data.push(Math.floor(20 * Math.random() + 1));
-			}
-			else {
-				break;
-			}
-		}
-		this.weeklyData = [
-			{ data: data, label: 'Dengue' }
-		];
-	}
-
-	initializeMonthlyChart() {
-		this.monthlyOptions = {
-			scaleShowVerticalLines: false,
-			responsive: true,
-			maintainAspectRatio: false,
-			legend: {
-				position: 'top',
-				labels: {
-					fontColor: 'white'
-				}
-			},
-			scales: {
-				xAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}],
-				yAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}]
-			}
-		};
-		this.monthlyLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-		this.monthlyData = [
-			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Dengue' },
-			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Hemorrhagic Dengue' },
-			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Deaths by Dengue' }
-		];
 	}
 
 	initializeForecastingChart() {
@@ -203,10 +122,8 @@ export class DashboardComponent implements OnInit {
 					},
 				}]
 			},
-			elements: {
-				point:{
-					radius: 0
-				}
+			tooltips: {
+				mode: 'x'
 			}
 		};
 		this.forecastingData = [];
@@ -240,8 +157,8 @@ export class DashboardComponent implements OnInit {
 		let dataForecast2 = [];
 
 		for (let i = 0; i < dataForecast.length; i++) {
-			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 1 });
-			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 1 });
+			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 5 });
+			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 2 });
 		}
 
 		let confidenceIntervalColor = '#ccc';
@@ -254,9 +171,102 @@ export class DashboardComponent implements OnInit {
 				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
 			},
 			{
-				data: dataForecast2, label: '- Confidence Interval', fill: false, yAxisID: 'default',
+				data: dataForecast2, label: '- Confidence Interval', fill: '-1', yAxisID: 'default',
 				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
 			}
+		];
+	}
+
+	initializeWeeklyChart() {
+		this.weeklyOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white',
+						maxRotation: 45,
+						minRotation: 45
+					},
+					stacked: true
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					},
+					stacked: true
+				}]
+			},
+			tooltips: {
+				mode: 'x'
+			}
+		};
+		this.weeklyData = [];
+		this.weeklyLabels = [];
+		let data = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				this.weeklyLabels.push(valueDate);
+				data.push(Math.floor(20 * Math.random() + 1) );
+			}
+			else {
+				break;
+			}
+		}
+		this.weeklyData = [
+			{ data: data, label: 'Dengue' },
+			{ data: data, label: 'Hemorrhagic Dengue' },
+			{ data: data, label: 'Deaths by Dengue' }
+		];
+	}
+
+	initializeMonthlyChart() {
+		this.monthlyOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			},
+			tooltips: {
+				mode: 'index'
+			}
+		};
+		this.monthlyLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+		this.monthlyData = [
+			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Dengue' },
+			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Hemorrhagic Dengue' },
+			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Deaths by Dengue' }
 		];
 	}
 
@@ -555,11 +565,14 @@ export class DashboardComponent implements OnInit {
 	}
 
 	randomCharts() {
+
 		for (let i = 0; i < this.monthlyData[0].data.length; i++) {
-			this.monthlyData[0].data[i] = 100 * Math.random();
-			this.monthlyData[1].data[i] = 100 * Math.random();
-			this.monthlyData[2].data[i] = 100 * Math.random();
+			this.monthlyData[0].data[i] = Math.floor(100 * Math.random());
+			this.monthlyData[1].data[i] = Math.floor(100 * Math.random());
+			this.monthlyData[2].data[i] = Math.floor(100 * Math.random());
 		}
+
+
 
 		this.weeklyData = [];
 		this.weeklyLabels = [];
@@ -577,8 +590,12 @@ export class DashboardComponent implements OnInit {
 			}
 		}
 		this.weeklyData = [
-			{ data: data, label: 'Dengue' }
+			{ data: data, label: 'Dengue' },
+			{ data: data, label: 'Hemorrhagic Dengue' },
+			{ data: data, label: 'Deaths by Dengue' }
 		];
+
+
 
 		this.forecastingData = [];
 		this.forecastingLabels = [];
@@ -611,8 +628,8 @@ export class DashboardComponent implements OnInit {
 		let dataForecast2 = [];
 
 		for (let i = 0; i < dataForecast.length; i++) {
-			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 1 });
-			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 1 });
+			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 5 });
+			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 2 });
 		}
 
 		let confidenceIntervalColor = '#ccc';
@@ -625,7 +642,7 @@ export class DashboardComponent implements OnInit {
 				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
 			},
 			{
-				data: dataForecast2, label: '- Confidence Interval', fill: false, yAxisID: 'default',
+				data: dataForecast2, label: '- Confidence Interval', fill: '-1', yAxisID: 'default',
 				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
 			}
 		];
