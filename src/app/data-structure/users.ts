@@ -3,7 +3,7 @@ export class Users{
     constructor(){
         let temp = new User("Ceballos Arroyo, Alberto Mario", "assets/images/LogoSmall.png", "", "Texto");
         this.users.push(temp);
-        temp = new User("Eusse Giraldo, Andrés Felipe", "assets/images/AboutUs/EusseGiraldo.png", "https://www.linkedin.com/in/andres-eusse-babb8a1a6/", "Texto");
+        temp = new User("Eusse Giraldo, Andrés Felipe", "assets/images/AboutUs/EusseGiraldo.png", "https://www.linkedin.com/in/andres-eusse-babb8a1a6/", "Electronic engineer and electrical engineer. Master in Engineering with an emphasis on Transmission and Distribution. Great interest in areas related to object oriented programming, visualization systems in electrical systems, analysis of power systems, and Smart Grids.");
         this.users.push(temp);
         temp = new User("Kertznus Rivera, Iván", "assets/images/LogoSmall.png", "", "Texto");
         this.users.push(temp);

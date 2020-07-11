@@ -1,10 +1,12 @@
 export class top10Mun{
     public state: string;
     public municipality: string;
-    public value: number;
-    constructor(state: string, municipality: string, value: number){
+    public incidence: number;
+    public lethatily: number;
+    constructor(state: string, municipality: string, incidence: number, lethatily: number){
         this.state = state;
         this.municipality = municipality;
-        this.value = value;
+        this.incidence = incidence;
+        this.lethatily = lethatily;
     }
 }

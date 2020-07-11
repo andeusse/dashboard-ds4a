@@ -1,3 +1,11 @@
+.KPI{
+    background-color: #343a40;
+}
+.KPI:hover{
+    background-color: #303030;
+}
+
+
 .actionBtn{
     width: 10em;
 }

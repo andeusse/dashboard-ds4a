@@ -1,3 +1,6 @@
+<div *ngIf="isLoading" id="progress-bar-div">
+    <mat-progress-bar id="progress-bar" mode="indeterminate"></mat-progress-bar>
+</div>
 <div class="container-fluid p-3 my-3 bg-dark text-light">
     <div class="row justify-content-center m-2">
         <div class="col-md-3 text-center">
@@ -47,25 +50,59 @@
     </div>
 
     <div>
-        <div class="row card-deck mb-2">
-            <div *ngFor="let item of _KPI" class="bg-light text-dark card col-md-3 p-2">
+        <div class="row card-deck m-2">
+            <div *ngFor="let item of _KPI" class="bg-dark text-light card col-md-3 p-2" style="border-color: white; border-width: 2px;">
                 <div class="text-center" style="font-size: large;">
-                    <span id="{{item.title}}">
-                        <fa-icon id="icon-indicator-{{item.id}}" [icon]="['fas', item.icon]"></fa-icon>
-                        {{item.title}}: <span style="font-size: xx-large;">{{item.value}} </span><small class="text-muted">{{item.unit}}</small>
-                    </span>
-                </div>
-                <div class="text-center p-2" style="font-size: xx-large;">
-                    <span>
-                        <fa-icon *ngIf="item.tendency >= 0" id="icon-indicator-{{item.id}}" [icon]="['fas', 'caret-up']" style="color: red"></fa-icon>
-                        <fa-icon *ngIf="item.tendency < 0" id="icon-indicator-{{item.id}}" [icon]="['fas', 'caret-down']" style="color: green;"></fa-icon>
-                        <small class="text-muted" style="font-size: large;"> {{item.tendency}} %</small>
-                    </span>
+                    <div class="mb-2">
+                        <span id="{{item.title}}">
+                            <fa-icon [icon]="['fas', item.icon]"></fa-icon>{{item.title}}:
+                        </span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 text-light card KPI" style="border-color: white; border-width: 2px;">
+                            <div style="padding-top: 5px;">
+                                <div class="mb-2">
+                                    Frequency <br>
+                                    <small class="text-muted"> {{item.totalCasesUnit}}</small>
+                                </div>
+                                <span style="font-size: 35px;">
+                                    {{item.totalCases}}
+                                </span>
+                            </div>
+                            <div class="text-center mb-1" style="font-size: xx-large;">
+                                <span>
+                                    <fa-icon *ngIf="item.totalCasesTendency >= 0" [icon]="['fas', 'caret-up']" style="color: red"></fa-icon>
+                                    <fa-icon *ngIf="item.totalCasesTendency < 0" [icon]="['fas', 'caret-down']" style="color: green;"></fa-icon>
+                                    <small style="font-size: large;"> {{item.totalCasesTendency}} %</small>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 text-light card KPI" style="border-color: white; border-width: 2px;">
+                            <div style="padding-top: 5px;">
+                                <div class="mb-2">
+                                    {{item.indicatorName}} <br>
+                                    <small class="text-muted"> {{item.indicatorUnit}}</small>
+                                </div>
+                                <span style="font-size: 35px;">
+                                    {{item.indicator}}
+                                </span>
+                            </div>
+                            <div class="text-center mb-1" style="font-size: xx-large;">
+                                <span>
+                                    <fa-icon *ngIf="item.indicatorTendency >= 0" [icon]="['fas', 'caret-up']" style="color: red"></fa-icon>
+                                    <fa-icon *ngIf="item.indicatorTendency < 0" [icon]="['fas', 'caret-down']" style="color: green;"></fa-icon>
+                                    <small style="font-size: large;"> {{item.indicatorTendency}} %</small>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="bg-light text-dark card col-md-3 p-2">
-                <div>
-                    <span style="height: 100%; display: flex; align-items: center; font-size: xx-large; text-align: center;">
+            <div class="text-light card col-md-3 p-2 KPI" style="border-color: white; border-width: 2px;">
+                <div class="text-center" style="margin-bottom: 50px; margin-top: 50px;">
+                    <span style="height: 100%; font-size: xx-large;">
                         DENG&nbsp;
                         <fa-icon id="dengometer-icon" [icon]="['fas', 'exclamation-circle']" style="font-size: 50px; color: green;"></fa-icon>
                         &nbsp;METER
@@ -78,7 +115,7 @@
 
 
 
-    
+
     <div class="row">
         <div class="col-md-3">
             <h2 class="text-center">TOP 10 CITIES {{scrollBarValue}}</h2>
@@ -86,12 +123,16 @@
                 <div class="col-md-12 mat-elevation-z8">
                     <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="Top10Municipalities">
                         <ng-container matColumnDef="municipality">
-                            <th mat-header-cell *matHeaderCellDef class="text-light" style="font-size: large;"> MUNICIPALITY </th>
+                            <th mat-header-cell *matHeaderCellDef class="text-light"> MUNICIPALITY </th>
                             <td mat-cell *matCellDef="let item" class="text-light"> {{item.municipality}} <small class="text-right"> ({{item.state}})</small></td>
                         </ng-container>
-                        <ng-container matColumnDef="value">
-                            <th mat-header-cell *matHeaderCellDef class="text-light" style="font-size: large;"> VALUE </th>
-                            <td mat-cell *matCellDef="let item" class="text-light"> {{item.value}} </td>
+                        <ng-container matColumnDef="incidence">
+                            <th mat-header-cell *matHeaderCellDef class="text-light text-center"> INCIDENCE <br> <small>[Cases x 100000 people]</small></th>
+                            <td mat-cell *matCellDef="let item" class="text-light text-center"> {{item.incidence}} </td>
+                        </ng-container>
+                        <ng-container matColumnDef="lethality">
+                            <th mat-header-cell *matHeaderCellDef class="text-light text-center"> LETHALITY <br> <small>[%]</small></th>
+                            <td mat-cell *matCellDef="let item" class="text-light text-center"> {{item.lethatily}} </td>
                         </ng-container>
                         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
                         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>

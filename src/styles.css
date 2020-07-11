@@ -34,3 +34,18 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .mat-slider-thumb-label-text {
     opacity: 1 !important;
 }
+
+
+/* Estilo de la barra de progreso */
+#progress-bar-div{
+    position: fixed;
+    z-index:1000;
+    height: 100%;
+    width: 100%;
+	background-color: rgba(50, 50, 50, 0.5);
+}
+#progress-bar{
+    top: 50%;
+    left: 10%;
+    width: 80%;
+}
