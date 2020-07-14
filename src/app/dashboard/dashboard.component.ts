@@ -1,12 +1,15 @@
-import { Component, OnInit, ViewChildren, QueryList } from '@angular/core';
+import { Component, OnInit, ViewChildren, QueryList, ViewChild } from '@angular/core';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { BaseChartDirective } from 'ng2-charts';
 import { IDropdownSettings } from 'ng-multiselect-dropdown';
 import { States } from "../data-structure/departmens-municipalities"
 import { StatesJsonService } from "../services/states-json.service";
 import { Indicator } from '../data-structure/indicator';
-import { top10Mun } from '../data-structure/top10-mun';
+import { MunicipalityTable } from '../data-structure/municipality-table';
 import { MatSliderChange } from '@angular/material/slider';
+import { stat } from 'fs';
 
 @Component({
 	selector: 'app-dashboard',
@@ -14,8 +17,6 @@ import { MatSliderChange } from '@angular/material/slider';
 	styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-
-	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
 	intervalID: NodeJS.Timeout;
 
@@ -49,8 +50,8 @@ export class DashboardComponent implements OnInit {
 	citiesDropDownListPlaceHolder = 'Select a city';
 
 	_KPI: Array<Indicator> = [];
-	Top10Municipalities: Array<top10Mun> = [];
-	dataSource = new MatTableDataSource<top10Mun>([]);
+	MunicipalitiesTable: Array<MunicipalityTable> = [];
+	dataSource = new MatTableDataSource<MunicipalityTable>([]);
 
 	forecastingData = [];
 	forecastingLabels = [];
@@ -73,8 +74,16 @@ export class DashboardComponent implements OnInit {
 	constructor(private StatesJsonService: StatesJsonService,) {
 	}
 
+	@ViewChild(MatPaginator, {static: true}) paginator: MatPaginator;
+	@ViewChild(MatSort, {static: true}) sort: MatSort;
+
+	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
+
 	ngOnInit(): void {
 		this.scrollBarValue = 2020;
+		this.dataSource.paginator = this.paginator;
+		this.dataSource.sort = this.sort;
+
 		this.initializeKPI();
 		this.initializeMonthlyChart();
 		this.initializeWeeklyChart();
@@ -400,7 +409,6 @@ export class DashboardComponent implements OnInit {
 		});
 
 		this.layerStates.addListener('click', function (event) {
-			self.map.setZoom(7);
 			self.statesSelected = [];
 			self.statesSelected[0] = event.feature.getProperty('Name');
 			self.idStateSelected = event.feature.getProperty('Code');
@@ -408,14 +416,14 @@ export class DashboardComponent implements OnInit {
 		});
 
 		this.layerStates.addListener('mouseover', function (event) {
-			if(self.idStateSelected == ""){
+			if (self.idStateSelected == "") {
 				self.layerStates.overrideStyle(event.feature, { strokeWeight: 5, fillOpacity: 1 });
 			}
 			self.setLegendValue(true, event.feature);
 		});
 
 		this.layerStates.addListener('mouseout', function (event) {
-			if(self.idStateSelected == ""){
+			if (self.idStateSelected == "") {
 				self.layerStates.revertStyle(event.feature);
 			}
 			self.setLegendValue(false);
@@ -425,10 +433,8 @@ export class DashboardComponent implements OnInit {
 	initializeLayerMunicipalities() {
 		let self = this;
 		this.layerMunicipalities = new google.maps.Data({ map: this.map });
-		this.layerMunicipalities.loadGeoJson('assets/ColombiaMun.geo.json', { idPropertyName: 'Code' }, function (features) {
-			for (let i = 0; i < features.length; i++) {
-				features[i].setProperty('Value', Math.floor(Math.random() * 200));
-			}
+		this.layerMunicipalities.loadGeoJson('/assets/ColombiaMunSimp.json', { idPropertyName: 'Code' }, function (features) {
+			self.randomMapValues();
 			self.minLegendValue = 0;
 			self.maxLegendValue = 200;
 			self.isLoading = false;
@@ -449,13 +455,13 @@ export class DashboardComponent implements OnInit {
 
 		this.layerMunicipalities.addListener('click', function (event) {
 			self.idCitySelected = event.feature.getProperty('Code');
-			self.States.states.forEach(state =>{
-				if(state.code == self.idStateSelected){
+			self.States.states.forEach(state => {
+				if (state.code == self.idStateSelected) {
 					state.municipalities.forEach(municipality => {
-						if(municipality.code == self.idCitySelected){
+						if (municipality.code == self.idCitySelected) {
 							self.citiesSelected = [];
 							self.citiesSelected[0] = municipality.name;
-							self.map.setCenter({lat: municipality.lat, lng: municipality.lng});
+							self.map.setCenter({ lat: municipality.lat, lng: municipality.lng });
 							self.map.setZoom(8);
 							self.randomDashboard();
 							return;
@@ -476,8 +482,8 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	setLegendValue(showValue: boolean, feature: google.maps.Data.Feature = null){
-		if(showValue){
+	setLegendValue(showValue: boolean, feature: google.maps.Data.Feature = null) {
+		if (showValue) {
 			var percent = (feature.getProperty('Value') - this.minLegendValue) / (this.maxLegendValue - this.minLegendValue) * 100;
 			document.getElementById('data-label').textContent = feature.getProperty('Name');
 			document.getElementById('data-value').textContent = feature.getProperty('Value').toLocaleString() + ' cases';
@@ -485,7 +491,7 @@ export class DashboardComponent implements OnInit {
 			document.getElementById('data-caret').style.display = 'block';
 			document.getElementById('data-caret').style.paddingLeft = percent + '%';
 		}
-		else{
+		else {
 			document.getElementById('data-box').style.display = 'none';
 			document.getElementById('data-caret').style.display = 'none';
 		}
@@ -544,25 +550,25 @@ export class DashboardComponent implements OnInit {
 				this.selectedFeature = this.layerStates.getFeatureById(state.code);
 				let center = this.selectedFeature.getProperty('Center');
 				this.map.setCenter(center);
-				this.map.setZoom(7);
 				state.municipalities.forEach(municipality => {
 					this.citiesDropDownList.push(municipality.name);
 				});
 				this.idStateSelected = state.code;
-			}
-		});
 
-		this.layerStates.forEach(feature => {
-			this.layerStates.overrideStyle(feature, { visible: false });
-		});
-		
-		this.layerMunicipalities.forEach(feature => {
-			let code: string = feature.getProperty('Code');
-			let stateCode = code.substring(0, 2);
-			if(this.idStateSelected == stateCode){
-				this.layerMunicipalities.overrideStyle(feature, { visible: true });
-			}else{
-				this.layerMunicipalities.overrideStyle(feature, { visible: false });
+				this.layerStates.forEach(feature => {
+					this.layerStates.overrideStyle(feature, { visible: false });
+				});
+				this.layerMunicipalities.forEach(feature => {
+					let code: string = feature.getProperty('Code');
+					let stateCode = code.substring(0, 2);
+					if (this.idStateSelected == stateCode) {
+						this.layerMunicipalities.overrideStyle(feature, { visible: true });
+					} else {
+						this.layerMunicipalities.overrideStyle(feature, { visible: false });
+					}
+				});
+
+				this.map.setZoom(7);
 			}
 		});
 
@@ -591,7 +597,8 @@ export class DashboardComponent implements OnInit {
 			if (this.statesSelected[0] == state.name) {
 				state.municipalities.forEach(municipality => {
 					if (this.citiesSelected[0] == municipality.name) {
-						this.map.setZoom(9);
+						this.map.setCenter({ lat: municipality.lat, lng: municipality.lng });
+						this.map.setZoom(8);
 						this.idCitySelected = municipality.code;
 						return;
 					}
@@ -738,10 +745,10 @@ export class DashboardComponent implements OnInit {
 	}
 
 	randomMapValues() {
-		this.layerStates.forEach(feature =>{
+		this.layerStates.forEach(feature => {
 			feature.setProperty('Value', Math.floor(Math.random() * 200))
 		});
-		this.layerMunicipalities.forEach(feature =>{
+		this.layerMunicipalities.forEach(feature => {
 			feature.setProperty('Value', Math.floor(Math.random() * 200))
 		});
 		this.minLegendValue = 0;
@@ -757,17 +764,18 @@ export class DashboardComponent implements OnInit {
 	}
 
 	randomTable() {
-		this.Top10Municipalities = [];
-		for (let i = 0; i < 10; i++) {
-			let randomStateNumber = Math.floor(this.States.states.length * Math.random());
-			let randomMunNumber = Math.floor(this.States.states[randomStateNumber].municipalities.length * Math.random());
-			let randomMun = this.States.states[randomStateNumber].municipalities[randomMunNumber].name;
-			let randomValueIncidence = Math.floor(600 * Math.random());
-			let randomValueLethality = Math.floor(25 * Math.random());
-			this.Top10Municipalities.push(new top10Mun(this.States.states[randomStateNumber].name, randomMun, randomValueIncidence, randomValueLethality))
-		}
-		this.Top10Municipalities.sort((a, b) => (a.incidence < b.incidence) ? 1 : -1);
-		this.dataSource.data = this.Top10Municipalities;
+		this.MunicipalitiesTable = [];
+
+		this.States.states.forEach(state => {
+			state.municipalities.forEach(municipality => {
+				let randomValueIncidence = Math.floor(600 * Math.random());
+				let randomValueLethality = Math.floor(25 * Math.random());
+				this.MunicipalitiesTable.push(new MunicipalityTable(state.name, municipality.name, randomValueIncidence, randomValueLethality))
+			})
+		});
+
+		this.MunicipalitiesTable.sort((a, b) => (a.incidence < b.incidence) ? 1 : -1);
+		this.dataSource.data = this.MunicipalitiesTable;
 	}
 
 	randomDengometer() {
@@ -781,6 +789,15 @@ export class DashboardComponent implements OnInit {
 			color = '#FFDB58';
 		}
 		document.getElementById('dengometer-icon').style.color = color;
+	}
+
+	applyFilter(event: Event) {
+		const filterValue = (event.target as HTMLInputElement).value;
+		this.dataSource.filter = filterValue.trim().toLowerCase();
+
+		if (this.dataSource.paginator) {
+			this.dataSource.paginator.firstPage();
+		}
 	}
 
 	buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {

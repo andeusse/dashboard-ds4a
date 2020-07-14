@@ -1,12 +1,12 @@
-export class top10Mun{
+export class MunicipalityTable{
     public state: string;
     public municipality: string;
     public incidence: number;
-    public lethatily: number;
-    constructor(state: string, municipality: string, incidence: number, lethatily: number){
+    public lethality: number;
+    constructor(state: string, municipality: string, incidence: number, lethality: number){
         this.state = state;
         this.municipality = municipality;
         this.incidence = incidence;
-        this.lethatily = lethatily;
+        this.lethality = lethality;
     }
 }
