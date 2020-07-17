@@ -108,7 +108,7 @@
 
 
     <div class="row">
-        <div class="col-md-3">
+        <!-- <div class="col-md-3">
             <h3 class="text-center">TOP CITIES {{scrollBarValue}}</h3>
             <div class="row">
                 <div class="col-md-12 mat-elevation-z8">
@@ -116,23 +116,27 @@
                         <mat-label>Filter</mat-label>
                         <input matInput (keyup)="applyFilter($event)" placeholder="Search" #input>
                     </mat-form-field>
-                    <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="dataSource" matSort>
+                    <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="dataSource"
+                        matSort>
                         <ng-container matColumnDef="municipality">
-                            <th mat-header-cell *matHeaderCellDef class="text-light" class="text-center"> MUNICIPALITY </th>
+                            <th mat-header-cell *matHeaderCellDef class="text-light" class="text-center"> MUNICIPALITY
+                            </th>
                             <td mat-cell *matCellDef="let item" class="text-light"> {{item.municipality}} <small
                                     class="text-right"> ({{item.state}})</small></td>
                         </ng-container>
                         <ng-container matColumnDef="incidence">
-                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="text-light text-center"> INCIDENCE </th>
+                            <th mat-header-cell *matHeaderCellDef (click)="sortByIncidence()"
+                                class="text-light text-center sortable-column"> INCIDENCE </th>
                             <td mat-cell *matCellDef="let item" class="text-light text-center"> {{item.incidence}} </td>
                         </ng-container>
                         <ng-container matColumnDef="lethality">
-                            <th mat-header-cell *matHeaderCellDef mat-sort-header class="text-light text-center"> LETHALITY </th>
+                            <th mat-header-cell *matHeaderCellDef (click)="sortByLethality()"
+                                class="text-light text-center sortable-column"> LETHALITY </th>
                             <td mat-cell *matCellDef="let item" class="text-light text-center"> {{item.lethality}} </td>
                         </ng-container>
 
                         <ng-container matColumnDef="municipality-description">
-                            <th mat-header-cell *matHeaderCellDef>  </th>
+                            <th mat-header-cell *matHeaderCellDef> </th>
                         </ng-container>
                         <ng-container matColumnDef="incidence-description">
                             <th mat-header-cell *matHeaderCellDef class="text-center"> [Cases x 100000 people] </th>
@@ -143,7 +147,8 @@
 
                         <tr mat-header-row *matHeaderRowDef="displayedColumns">
                         </tr>
-                        <tr mat-header-row *matHeaderRowDef="['municipality-description', 'incidence-description', 'lethality-description']">
+                        <tr mat-header-row
+                            *matHeaderRowDef="['municipality-description', 'incidence-description', 'lethality-description']">
                         </tr>
                         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 
@@ -151,19 +156,24 @@
                     <mat-paginator class="bg-dark text-light" [pageSizeOptions]="[10]"></mat-paginator>
                 </div>
             </div>
-        </div>
+        </div> -->
 
-        <div class="col-md-5">
+        <div class="col-md-8">
             <div class="p-1">
                 <nav>
                     <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                        <a class="nav-item nav-link active" id="nav-correlations-tab" data-toggle="tab"
-                            href="#nav-correlations" role="tab" aria-controls="nav-correlations"
-                            aria-selected="true">Forecasting</a>
+                        <a class="nav-item nav-link active" id="nav-correlations-tab" data-toggle="tab" href="#nav-correlations" 
+                            role="tab" aria-controls="nav-correlations" aria-selected="true">Forecasting</a>
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-timelineW"
                             role="tab" aria-controls="nav-timeline" aria-selected="false">Timeline (Weekly)</a>
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-timelineM"
                             role="tab" aria-controls="nav-timeline" aria-selected="false">Timeline (Monthly)</a>
+                        <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-timelineEpidemiologicalBehavior"
+                            role="tab" aria-controls="nav-timeline" aria-selected="false">Timeline (Cases)</a>
+                        <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-timelineMMWR"
+                            role="tab" aria-controls="nav-timeline" aria-selected="false">MMWR</a>
+                        <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-top10Municipalities"
+                            role="tab" aria-controls="nav-timeline" aria-selected="false">Top 10 Municipalities</a>
                     </div>
                 </nav>
                 <div class="tab-content" id="nav-tabContent">
@@ -187,6 +197,71 @@
                             <canvas baseChart height="700" [datasets]="monthlyData" [labels]="monthlyLabels"
                                 [options]="monthlyOptions" [legend]="monthlyLegends" [chartType]="monthlyType">
                             </canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="nav-timelineEpidemiologicalBehavior" role="tabpanel" aria-labelledby="nav-timeline-tab">
+                        <div>
+                            <canvas baseChart height="700" [datasets]="epidemiologicalBehaviorData" [labels]="epidemiologicalBehaviorLabels"
+                                [options]="epidemiologicalBehaviorOptions" [legend]="epidemiologicalBehaviorLegends" [chartType]="epidemiologicalBehaviorType">
+                            </canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="nav-timelineMMWR" role="tabpanel" aria-labelledby="nav-timeline-tab">
+                        <div>
+                            <canvas baseChart height="700" [datasets]="_MMWRData" [labels]="_MMWRLabels"
+                                [options]="_MMWROptions" [legend]="_MMWRLegends" [chartType]="_MMWRType">
+                            </canvas>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="nav-top10Municipalities" role="tabpanel" aria-labelledby="nav-timeline-tab">
+                        <div>
+                            <h3 class="text-center">TOP CITIES {{scrollBarValue}}</h3>
+                            <div class="row">
+                                <div class="col-md-12 mat-elevation-z8">
+                                    <mat-form-field style="width: 100%;">
+                                        <mat-label>Filter</mat-label>
+                                        <input matInput (keyup)="applyFilter($event)" placeholder="Search" #input>
+                                    </mat-form-field>
+                                    <table mat-table style="width: 100%;" class="table-dark table-striped" [dataSource]="dataSource"
+                                        matSort>
+                                        <ng-container matColumnDef="municipality">
+                                            <th mat-header-cell *matHeaderCellDef class="text-light" class="text-center"> MUNICIPALITY
+                                            </th>
+                                            <td mat-cell *matCellDef="let item" class="text-light"> {{item.municipality}} <small
+                                                    class="text-right"> ({{item.state}})</small></td>
+                                        </ng-container>
+                                        <ng-container matColumnDef="incidence">
+                                            <th mat-header-cell *matHeaderCellDef (click)="sortByIncidence()"
+                                                class="text-light text-center sortable-column"> INCIDENCE </th>
+                                            <td mat-cell *matCellDef="let item" class="text-light text-center"> {{item.incidence}} </td>
+                                        </ng-container>
+                                        <ng-container matColumnDef="lethality">
+                                            <th mat-header-cell *matHeaderCellDef (click)="sortByLethality()"
+                                                class="text-light text-center sortable-column"> LETHALITY </th>
+                                            <td mat-cell *matCellDef="let item" class="text-light text-center"> {{item.lethality}} </td>
+                                        </ng-container>
+                
+                                        <ng-container matColumnDef="municipality-description">
+                                            <th mat-header-cell *matHeaderCellDef> </th>
+                                        </ng-container>
+                                        <ng-container matColumnDef="incidence-description">
+                                            <th mat-header-cell *matHeaderCellDef class="text-center"> [Cases x 100000 people] </th>
+                                        </ng-container>
+                                        <ng-container matColumnDef="lethality-description">
+                                            <th mat-header-cell *matHeaderCellDef class="text-center"> [%] </th>
+                                        </ng-container>
+                
+                                        <tr mat-header-row *matHeaderRowDef="displayedColumns">
+                                        </tr>
+                                        <tr mat-header-row
+                                            *matHeaderRowDef="['municipality-description', 'incidence-description', 'lethality-description']">
+                                        </tr>
+                                        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+                
+                                    </table>
+                                    <mat-paginator class="bg-dark text-light" [pageSizeOptions]="[10]"></mat-paginator>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

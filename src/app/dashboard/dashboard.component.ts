@@ -29,7 +29,6 @@ export class DashboardComponent implements OnInit {
 	layerMunicipalities = new google.maps.Data({ map: this.map });
 	minLegendValue: number;
 	maxLegendValue: number;
-	selectedFeature: google.maps.Data.Feature;
 
 	scrollBarValue: number;
 	minScrollBarYear: number = 2010;
@@ -63,7 +62,7 @@ export class DashboardComponent implements OnInit {
 	weeklyLabels = [];
 	weeklyOptions = {};
 	weeklyLegends = true;
-	weeklyType = 'line';
+	weeklyType = 'bar';
 
 	monthlyData = [];
 	monthlyLabels = [];
@@ -71,11 +70,23 @@ export class DashboardComponent implements OnInit {
 	monthlyLegends = true;
 	monthlyType = 'bar';
 
+	epidemiologicalBehaviorData = [];
+	epidemiologicalBehaviorLabels = [];
+	epidemiologicalBehaviorOptions = {};
+	epidemiologicalBehaviorLegends = true;
+	epidemiologicalBehaviorType = 'line';
+	
+	_MMWRData = [];
+	_MMWRLabels = [];
+	_MMWROptions = {};
+	_MMWRLegends = true;
+	_MMWRType = 'line';
+
 	constructor(private StatesJsonService: StatesJsonService,) {
 	}
 
-	@ViewChild(MatPaginator, {static: true}) paginator: MatPaginator;
-	@ViewChild(MatSort, {static: true}) sort: MatSort;
+	@ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
+	@ViewChild(MatSort, { static: true }) sort: MatSort;
 
 	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
@@ -85,9 +96,11 @@ export class DashboardComponent implements OnInit {
 		this.dataSource.sort = this.sort;
 
 		this.initializeKPI();
+		this.initializeForecastingChart();
 		this.initializeMonthlyChart();
 		this.initializeWeeklyChart();
-		this.initializeForecastingChart();
+		this.initializeEpidemiologicalBehaviorChart();
+		this.initializeMMWR();
 		this.initializeMap();
 		this.initializeLayerMunicipalities();
 		this.initializeLayerStates();
@@ -125,7 +138,8 @@ export class DashboardComponent implements OnInit {
 					ticks: {
 						fontColor: 'white',
 						maxRotation: 45,
-						minRotation: 45
+						minRotation: 45,
+						maxTicksLimit: 12
 					}
 				}],
 				yAxes: [{
@@ -183,11 +197,13 @@ export class DashboardComponent implements OnInit {
 			{ data: dataForecast, label: 'Forecast', fill: false, yAxisID: 'default' },
 			{
 				data: dataForecast1, label: '+ Confidence Interval', fill: false, yAxisID: 'default',
-				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor,
+				pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
 			},
 			{
 				data: dataForecast2, label: '- Confidence Interval', fill: '-1', yAxisID: 'default', fillOpacity: .3,
-				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor,
+				pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
 			}
 		];
 	}
@@ -215,14 +231,12 @@ export class DashboardComponent implements OnInit {
 						maxRotation: 45,
 						minRotation: 45,
 						maxTicksLimit: 12
-					},
-					stacked: true
+					}
 				}],
 				yAxes: [{
 					ticks: {
 						fontColor: 'white'
-					},
-					stacked: true
+					}
 				}]
 			},
 			tooltips: {
@@ -238,16 +252,14 @@ export class DashboardComponent implements OnInit {
 			let valueDate = addDays(startDate, i * 7);
 			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
 				this.weeklyLabels.push(valueDate);
-				data.push(Math.floor(20 * Math.random() + 1));
+				data.push(Math.floor(200 * Math.random() + 50));
 			}
 			else {
 				break;
 			}
 		}
 		this.weeklyData = [
-			{ data: data, label: 'Dengue' },
-			{ data: data, label: 'Severe Dengue' },
-			{ data: data, label: 'Deaths by Dengue' }
+			{ data: data, label: 'Municipalities outbreak', barThickness: 10, maxBarThickness: 10}
 		];
 	}
 
@@ -283,6 +295,176 @@ export class DashboardComponent implements OnInit {
 			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Dengue' },
 			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Severe Dengue' },
 			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Deaths by Dengue' }
+		];
+	}
+
+	initializeEpidemiologicalBehaviorChart() {
+		this.epidemiologicalBehaviorOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white',
+						maxRotation: 45,
+						minRotation: 45,
+						maxTicksLimit: 12
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			},
+			tooltips: {
+				mode: 'x'
+			}
+		};
+
+		this.epidemiologicalBehaviorData = [];
+		this.epidemiologicalBehaviorLabels = [];
+		let data = [];
+		let datap25 = [];
+		let datap50 = [];
+		let datap75 = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				data.push(Math.floor(100 * Math.random()));
+			}
+			this.epidemiologicalBehaviorLabels.push(valueDate);
+			datap25.push(Math.floor(20 * Math.random()));
+			datap50.push(Math.floor(30 * Math.random() + 20));
+			datap75.push(Math.floor(70 * Math.random() + 50));
+		}
+
+		let yearColor = 'white';
+		let p25Color = 'green';
+		let p50Color = 'yellow';
+		let p75Color = 'red';
+
+		this.epidemiologicalBehaviorData = [
+			{
+				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: datap25, label: 'P25', fill: false,
+				borderColor: p25Color, backgroundColor: p25Color,
+				pointBackgroundColor: p25Color, pointBorderColor: p25Color
+			},
+			{
+				data: datap50, label: 'P50', fill: false,
+				borderColor: p50Color, backgroundColor: p50Color,
+				pointBackgroundColor: p50Color, pointBorderColor: p50Color
+			},
+			{
+				data: datap75, label: 'P75', fill: false,
+				borderColor: p75Color, backgroundColor: p75Color,
+				pointBackgroundColor: p75Color, pointBorderColor: p75Color
+			}
+		];
+
+
+	}
+
+	initializeMMWR(){
+		this._MMWROptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white',
+						maxRotation: 45,
+						minRotation: 45,
+						maxTicksLimit: 12
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			},
+			tooltips: {
+				mode: 'x'
+			}
+		};
+
+		this._MMWRData = [];
+		this._MMWRLabels = [];
+		let data = [];
+		let upperLimit = [];
+		let lowerLimit = [];
+		let expectedReason = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				data.push((3 * Math.random()));
+			}
+			this._MMWRLabels.push(valueDate);
+			upperLimit.push((2 * Math.random() + 3));
+			lowerLimit.push((-2 * Math.random() - 1));
+			expectedReason.push(1);
+		}
+
+		let yearColor = 'white';
+		let upperLimitColor = 'red';
+		let lowerLimitColor = 'green';
+		let expectedReasonColor = 'black';
+
+		this._MMWRData = [
+			{
+				data: data, label: 'Observed Reason', fill: false, pointRadius: 7, showLine: false,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: upperLimit, label: 'Upper Limit', fill: false,
+				borderColor: upperLimitColor, backgroundColor: upperLimitColor,
+				pointBackgroundColor: upperLimitColor, pointBorderColor: upperLimitColor
+			},
+			{
+				data: lowerLimit, label: 'Lower Limit', fill: false,
+				borderColor: lowerLimitColor, backgroundColor: lowerLimitColor,
+				pointBackgroundColor: lowerLimitColor, pointBorderColor: lowerLimitColor
+			},
+			{
+				data: expectedReason, label: 'Expected Reason', fill: false, pointRadius: 3, showLine: false,
+				borderColor: expectedReasonColor, backgroundColor: expectedReasonColor,
+				pointBackgroundColor: expectedReasonColor, pointBorderColor: expectedReasonColor
+			}
 		];
 	}
 
@@ -540,15 +722,11 @@ export class DashboardComponent implements OnInit {
 	}
 
 	onStateSelect() {
-		if (this.selectedFeature) {
-			this.layerStates.revertStyle(this.selectedFeature);
-		}
 		this.citiesDropDownList = [];
 		this.citiesSelected = [];
 		this.States.states.forEach(state => {
 			if (this.statesSelected[0] == state.name) {
-				this.selectedFeature = this.layerStates.getFeatureById(state.code);
-				let center = this.selectedFeature.getProperty('Center');
+				let center = this.layerStates.getFeatureById(state.code).getProperty('Center');
 				this.map.setCenter(center);
 				state.municipalities.forEach(municipality => {
 					this.citiesDropDownList.push(municipality.name);
@@ -571,7 +749,6 @@ export class DashboardComponent implements OnInit {
 				this.map.setZoom(7);
 			}
 		});
-
 		this.randomDashboard();
 	}
 
@@ -581,7 +758,6 @@ export class DashboardComponent implements OnInit {
 		this.citiesDropDownList = [];
 		this.citiesSelected = [];
 		this.centerMap();
-		this.layerStates.revertStyle(this.selectedFeature);
 
 		this.layerStates.forEach(feature => {
 			this.layerStates.revertStyle(feature);
@@ -677,69 +853,168 @@ export class DashboardComponent implements OnInit {
 			let valueDate = addDays(startDate, i * 7);
 			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
 				this.weeklyLabels.push(valueDate);
-				data.push(Math.floor(20 * Math.random() + 1));
+				data.push(Math.floor(200 * Math.random() + 50));
 			}
 			else {
 				break;
 			}
 		}
 		this.weeklyData = [
-			{ data: data, label: 'Dengue' },
-			{ data: data, label: 'Hemorrhagic Dengue' },
-			{ data: data, label: 'Deaths by Dengue' }
+			{ data: data, label: 'Municipalities outbreak', barThickness: 8, maxBarThickness: 10}
 		];
 
 
+		if (this.scrollBarValue == this.maxScrollBarYear) {
+			this.forecastingData = [];
+			this.forecastingLabels = [];
+			let valueDate: Date;
+			data = [];
+			let dataForecast = [];
+			startDate = getFirstSunday(this.scrollBarValue);
+			nowDate = new Date();
+			for (let i = 0; i <= 53; i++) {
+				valueDate = addDays(startDate, i * 7);
+				if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+					this.forecastingLabels.push(valueDate);
+					let randomValue = Math.floor(20 * Math.random() + 1);
+					data.push({ x: valueDate, y: randomValue });
+				}
+				else {
+					dataForecast.push(data[data.length - 1]);
+					break;
+				}
+			}
 
-		this.forecastingData = [];
-		this.forecastingLabels = [];
-		let valueDate: Date;
+			startDate = valueDate;
+			for (let i = 0; i < 8; i++) {
+				valueDate = addDays(startDate, i * 7);
+				this.forecastingLabels.push(valueDate);
+				dataForecast.push({ x: valueDate, y: Math.floor(20 * Math.random() + 1) });
+			}
+
+			let dataForecast1 = [];
+			let dataForecast2 = [];
+
+			for (let i = 0; i < dataForecast.length; i++) {
+				dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 5 });
+				dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 2 });
+			}
+
+			let confidenceIntervalColor = '#ccc';
+
+			this.forecastingData = [
+				{ data: data, label: 'Dengue', fill: false, yAxisID: 'default' },
+				{ data: dataForecast, label: 'Forecast', fill: false, yAxisID: 'default' },
+				{
+					data: dataForecast1, label: '+ Confidence Interval', fill: false, yAxisID: 'default',
+					borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+				},
+				{
+					data: dataForecast2, label: '- Confidence Interval', fill: '-1', yAxisID: 'default',
+					borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+				}
+			];
+		}
+
+
+
+		this.epidemiologicalBehaviorData = [];
+		this.epidemiologicalBehaviorLabels = [];
 		data = [];
-		let dataForecast = [];
+		let datap25 = [];
+		let datap50 = [];
+		let datap75 = [];
 		startDate = getFirstSunday(this.scrollBarValue);
 		nowDate = new Date();
-		for (let i = 0; i <= 53; i++) {
-			valueDate = addDays(startDate, i * 7);
+
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
 			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.forecastingLabels.push(valueDate);
-				let randomValue = Math.floor(20 * Math.random() + 1);
-				data.push({ x: valueDate, y: randomValue });
+				data.push(Math.floor(100 * Math.random()));
 			}
-			else {
-				dataForecast.push(data[data.length - 1]);
-				break;
-			}
+			this.epidemiologicalBehaviorLabels.push(valueDate);
+			datap25.push(Math.floor(20 * Math.random()));
+			datap50.push(Math.floor(30 * Math.random() + 20));
+			datap75.push(Math.floor(70 * Math.random() + 50));
 		}
 
-		startDate = valueDate;
-		for (let i = 0; i < 8; i++) {
-			valueDate = addDays(startDate, i * 7);
-			this.forecastingLabels.push(valueDate);
-			dataForecast.push({ x: valueDate, y: Math.floor(20 * Math.random() + 1) });
-		}
+		let yearColor = 'white';
+		let p25Color = 'green';
+		let p50Color = 'yellow';
+		let p75Color = 'red';
 
-		let dataForecast1 = [];
-		let dataForecast2 = [];
-
-		for (let i = 0; i < dataForecast.length; i++) {
-			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 5 });
-			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 2 });
-		}
-
-		let confidenceIntervalColor = '#ccc';
-
-		this.forecastingData = [
-			{ data: data, label: 'Dengue', fill: false, yAxisID: 'default' },
-			{ data: dataForecast, label: 'Forecast', fill: false, yAxisID: 'default' },
+		this.epidemiologicalBehaviorData = [
 			{
-				data: dataForecast1, label: '+ Confidence Interval', fill: false, yAxisID: 'default',
-				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
 			},
 			{
-				data: dataForecast2, label: '- Confidence Interval', fill: '-1', yAxisID: 'default',
-				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
+				data: datap25, label: 'P25', fill: false,
+				borderColor: p25Color, backgroundColor: p25Color,
+				pointBackgroundColor: p25Color, pointBorderColor: p25Color
+			},
+			{
+				data: datap50, label: 'P50', fill: false,
+				borderColor: p50Color, backgroundColor: p50Color,
+				pointBackgroundColor: p50Color, pointBorderColor: p50Color
+			},
+			{
+				data: datap75, label: 'P75', fill: false,
+				borderColor: p75Color, backgroundColor: p75Color,
+				pointBackgroundColor: p75Color, pointBorderColor: p75Color
 			}
 		];
+
+
+
+		this._MMWRData = [];
+		this._MMWRLabels = [];
+		data = [];
+		let upperLimit = [];
+		let lowerLimit = [];
+		let expectedReason = [];
+		startDate = getFirstSunday(this.scrollBarValue);
+		nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				data.push((3 * Math.random()));
+			}
+			this._MMWRLabels.push(valueDate);
+			upperLimit.push((2 * Math.random() + 3));
+			lowerLimit.push((-2 * Math.random() - 1));
+			expectedReason.push(1);
+		}
+
+		yearColor = 'white';
+		let upperLimitColor = 'red';
+		let lowerLimitColor = 'red';
+		let expectedReasonColor = 'black';
+
+		this._MMWRData = [
+			{
+				data: data, label: 'Observed Reason', fill: false, pointRadius: 10, showLine: false,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: upperLimit, label: 'Upper Limit', fill: false,
+				borderColor: upperLimitColor, backgroundColor: upperLimitColor,
+				pointBackgroundColor: upperLimitColor, pointBorderColor: upperLimitColor
+			},
+			{
+				data: lowerLimit, label: 'Lower Limit', fill: false,
+				borderColor: lowerLimitColor, backgroundColor: lowerLimitColor,
+				pointBackgroundColor: lowerLimitColor, pointBorderColor: lowerLimitColor
+			},
+			{
+				data: expectedReason, label: 'Expected Reason', fill: false, pointRadius: 3, showLine: false,
+				borderColor: expectedReasonColor, backgroundColor: expectedReasonColor,
+				pointBackgroundColor: expectedReasonColor, pointBorderColor: expectedReasonColor
+			}
+		];
+
 
 		this.updateCharts();
 	}
@@ -773,9 +1048,7 @@ export class DashboardComponent implements OnInit {
 				this.MunicipalitiesTable.push(new MunicipalityTable(state.name, municipality.name, randomValueIncidence, randomValueLethality))
 			})
 		});
-
-		this.MunicipalitiesTable.sort((a, b) => (a.incidence < b.incidence) ? 1 : -1);
-		this.dataSource.data = this.MunicipalitiesTable;
+		this.sortByIncidence();
 	}
 
 	randomDengometer() {
@@ -798,6 +1071,16 @@ export class DashboardComponent implements OnInit {
 		if (this.dataSource.paginator) {
 			this.dataSource.paginator.firstPage();
 		}
+	}
+
+	sortByIncidence() {
+		this.MunicipalitiesTable.sort(compareValues('incidence', 'desc'));
+		this.dataSource.data = this.MunicipalitiesTable;
+	}
+
+	sortByLethality() {
+		this.MunicipalitiesTable.sort(compareValues('lethality', 'desc'));
+		this.dataSource.data = this.MunicipalitiesTable;
 	}
 
 	buildInfoWindowsHTML(feature: { getProperty: (arg0: string) => string | number; }) {
@@ -836,4 +1119,27 @@ function getFirstSunday(year: number) {
 		}
 	}
 	return date;
+}
+
+function compareValues(key: string, order = 'asc') {
+	return function innerSort(a, b) {
+		if (!a.hasOwnProperty(key) || !b.hasOwnProperty(key)) {
+			return 0;
+		}
+
+		const varA = (typeof a[key] === 'string')
+			? a[key].toUpperCase() : a[key];
+		const varB = (typeof b[key] === 'string')
+			? b[key].toUpperCase() : b[key];
+
+		let comparison = 0;
+		if (varA > varB) {
+			comparison = 1;
+		} else if (varA < varB) {
+			comparison = -1;
+		}
+		return (
+			(order === 'desc') ? (comparison * -1) : comparison
+		);
+	};
 }

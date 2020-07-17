@@ -39,6 +39,10 @@
     }
 }
 
+.sortable-column:hover{
+    background-color: #303030;
+    cursor: pointer;
+}
 
 
 .nicebox {
