@@ -39,9 +39,15 @@
     }
 }
 
+
+
 .sortable-column:hover{
     background-color: #303030;
     cursor: pointer;
+}
+
+.news-link{
+    color: white;
 }
 
 

@@ -9,7 +9,10 @@ import { StatesJsonService } from "../services/states-json.service";
 import { Indicator } from '../data-structure/indicator';
 import { MunicipalityTable } from '../data-structure/municipality-table';
 import { MatSliderChange } from '@angular/material/slider';
-import { stat } from 'fs';
+import { News } from '../data-structure/news'
+
+import { ApiBackendService } from "../services/api-backend.service";
+import { CountryAPI, StateCityAPI, Dengue, SevereDengue, DeathsByDengue } from '../data-structure/api';
 
 @Component({
 	selector: 'app-dashboard',
@@ -17,6 +20,9 @@ import { stat } from 'fs';
 	styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
+
+	news: Array<News> = [];
+	todayDate;
 
 	intervalID: NodeJS.Timeout;
 
@@ -31,8 +37,9 @@ export class DashboardComponent implements OnInit {
 	maxLegendValue: number;
 
 	scrollBarValue: number;
-	minScrollBarYear: number = 2010;
+	minScrollBarYear: number = 2007;
 	maxScrollBarYear: number = 2020;
+	maxWeekData:Number = 16;
 
 	displayedColumns: string[] = ['municipality', 'incidence', 'lethality'];
 
@@ -58,31 +65,39 @@ export class DashboardComponent implements OnInit {
 	forecastingLegends = true;
 	forecastingType = 'line';
 
-	weeklyData = [];
-	weeklyLabels = [];
-	weeklyOptions = {};
-	weeklyLegends = true;
-	weeklyType = 'bar';
+	outbreakData = [];
+	outbreakLabels = [];
+	outbreakOptions = {};
+	outbreakLegends = true;
+	outbreakType = 'bar';
 
-	monthlyData = [];
-	monthlyLabels = [];
-	monthlyOptions = {};
-	monthlyLegends = true;
-	monthlyType = 'bar';
+	bortmanData = [];
+	bortmanLabels = [];
+	bortmanOptions = {};
+	bortmanLegends = true;
+	bortmanType = 'line';
 
 	epidemiologicalBehaviorData = [];
 	epidemiologicalBehaviorLabels = [];
 	epidemiologicalBehaviorOptions = {};
 	epidemiologicalBehaviorLegends = true;
 	epidemiologicalBehaviorType = 'line';
-	
+
 	_MMWRData = [];
 	_MMWRLabels = [];
 	_MMWROptions = {};
 	_MMWRLegends = true;
 	_MMWRType = 'line';
 
-	constructor(private StatesJsonService: StatesJsonService,) {
+	countryValues: CountryAPI;
+	selectedStateCityValues: StateCityAPI;
+	dataSet: CountryAPI | StateCityAPI;
+	dataSetCurrentYearDengue: Dengue;
+	dataSetCurrentYearSevereDengue: SevereDengue;
+	dataSetCurrentYearDeathsDengue: DeathsByDengue;
+
+	constructor(private StatesJsonService: StatesJsonService,
+		private ApiBackendService: ApiBackendService) {
 	}
 
 	@ViewChild(MatPaginator, { static: true }) paginator: MatPaginator;
@@ -91,30 +106,116 @@ export class DashboardComponent implements OnInit {
 	@ViewChildren(BaseChartDirective) charts: QueryList<BaseChartDirective>;
 
 	ngOnInit(): void {
+		this.initializeDashboard();
+		this.queryCountryValues();
+	}
+
+	queryCountryValues() {
+		this.isLoading = true;
+		this.ApiBackendService.getCountryValues().then(value => {
+			this.countryValues = value;
+			this.refreshDashBoard();
+			this.isLoading = false;
+		});
+	}
+
+	queryStateValues(){
+		this.isLoading = true;
+		this.ApiBackendService.getStateValues(this.idStateSelected).then(value => {
+			this.selectedStateCityValues = value;
+			console.log(value);
+			this.refreshDashBoard();
+			this.isLoading = false;
+		});
+	}
+
+	queryCityValues(){
+		this.isLoading = true;
+		this.ApiBackendService.getCityValues(this.idCitySelected).then(value => {
+			this.selectedStateCityValues = value;
+			this.refreshDashBoard();
+			this.isLoading = false;
+		});
+	}
+
+	initializeDashboard(){
 		this.scrollBarValue = 2020;
 		this.dataSource.paginator = this.paginator;
 		this.dataSource.sort = this.sort;
 
 		this.initializeKPI();
 		this.initializeForecastingChart();
-		this.initializeMonthlyChart();
-		this.initializeWeeklyChart();
-		this.initializeEpidemiologicalBehaviorChart();
-		this.initializeMMWR();
+		this.initializeOutbreakChart();
+		this.initializeQuantileChart();
+		this.initializeBortmanChart();
+		this.initializeMMWRChart();
 		this.initializeMap();
 		this.initializeLayerMunicipalities();
 		this.initializeLayerStates();
 		this.initializeDropDownStates();
 		this.initializeDropDownCities();
+
+		this.news.push(new News("Alerta por 450 casos de dengue en Medellín en lo que va de 2020", "Semana", "https://www.semana.com/nacion/articulo/colombia-hoy-medellin-en-alerta-por-450-casos-de-dengue-en-lo-corrido-del-ano/682660"));
+		this.news.push(new News("Noticia 2", "El Espectador", "https://www.google.com/"));
+		this.news.push(new News("Noticia 3", "El Espectador", "https://www.google.com/"));
+		this.news.push(new News("Noticia 4", "El Espectador", "https://www.google.com/"));
+		this.news.push(new News("Noticia 5", "El Espectador", "https://www.google.com/"));
+
+		let todayDate = new Date();
+		this.todayDate = todayDate.getFullYear() + "/" + (todayDate.getMonth() + 1).toString() + "/" + todayDate.getDate();
+	}
+
+	refreshDashBoard() {
+		this.dataSet = this.countryValues;
+		if ((this.idStateSelected != "") || (this.idCitySelected != "")) {
+			this.dataSet = this.selectedStateCityValues;
+		}
+		this.dataSet.dengue.forEach(year => {
+			if (parseInt(year.year) == this.scrollBarValue) {
+				this.dataSetCurrentYearDengue = year;
+			}
+		});
+		this.dataSet.severe_dengue.forEach(year => {
+			if (parseInt(year.year) == this.scrollBarValue) {
+				this.dataSetCurrentYearSevereDengue = year;
+			}
+		});
+		this.dataSet.deaths_by_dengue.forEach(year => {
+			if (parseInt(year.year) == this.scrollBarValue) {
+				this.dataSetCurrentYearDeathsDengue = year;
+			}
+		});
+		this.refreshKPIValues();
+		this.refreshForecastingChart();
+		this.refreshQuantileChart();
+		this.refreshBortmanChart();
+		this.refreshMMWRChart();
 	}
 
 	initializeKPI() {
-		let temp = new Indicator(0, "Dengue", 100, 2.1, "[Cases]", "Incidence", 10, -3.1, "[Cases x 100000 people]", "exclamation-triangle");
+		let temp = new Indicator(0, "Dengue", 0, 0, "[Cases]", "Incidence", 0, 0, "[Cases x 100000 people]", "exclamation-triangle");
 		this._KPI.push(temp);
-		temp = new Indicator(1, "Severe Dengue", 100, -5, "[Cases]", "Incidence", 10, -3.1, "[Cases x 100000 people]", "exclamation-triangle");
+		temp = new Indicator(1, "Severe Dengue", 0, 0, "[Cases]", "Incidence", 0, 0, "[Cases x 100000 people]", "exclamation-triangle");
 		this._KPI.push(temp);
-		temp = new Indicator(2, "Deaths by Dengue", 100, 8, "[Deaths]", "Mortality rate", 10, -3.1, "[%]", "skull-crossbones");
+		temp = new Indicator(2, "Deaths by Dengue", 0, 0, "[Deaths]", "Mortality rate", 0, 0, "[%]", "skull-crossbones");
 		this._KPI.push(temp);
+	}
+
+	refreshKPIValues() {
+		this._KPI[0].totalCases = parseInt(this.dataSetCurrentYearDengue.value);
+		this._KPI[0].totalCasesTendency = parseFloat(this.dataSetCurrentYearDengue.pct_change);
+		this._KPI[0].indicator = parseFloat(this.dataSetCurrentYearDengue.incidence);
+		this._KPI[0].indicatorTendency = parseFloat(this.dataSetCurrentYearDengue.pct_change_incidence);
+
+		this._KPI[1].totalCases = parseInt(this.dataSetCurrentYearSevereDengue.value);
+		this._KPI[1].totalCasesTendency = parseFloat(this.dataSetCurrentYearSevereDengue.pct_change);
+		this._KPI[1].indicator = parseFloat(this.dataSetCurrentYearSevereDengue.incidence);
+		this._KPI[1].indicatorTendency = parseFloat(this.dataSetCurrentYearSevereDengue.pct_change_incidence);
+
+		this._KPI[2].totalCases = parseInt(this.dataSetCurrentYearDeathsDengue.value);
+		this._KPI[2].totalCasesTendency = parseFloat(this.dataSetCurrentYearDeathsDengue.pct_change);
+		this._KPI[2].indicator = parseFloat(this.dataSetCurrentYearDeathsDengue.mortality_rate);
+		this._KPI[2].indicatorTendency = parseFloat(this.dataSetCurrentYearDeathsDengue.pct_change_mortality_rate);
 	}
 
 	initializeForecastingChart() {
@@ -157,148 +258,27 @@ export class DashboardComponent implements OnInit {
 		};
 		this.forecastingData = [];
 		this.forecastingLabels = [];
-		let valueDate: Date;
 		let data = [];
-		let dataForecast = [];
-		let startDate = getFirstSunday(this.scrollBarValue);
-		let nowDate = new Date();
-		for (let i = 0; i <= 53; i++) {
-			valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.forecastingLabels.push(valueDate);
-				let randomValue = Math.floor(20 * Math.random() + 1);
-				data.push({ x: valueDate, y: randomValue });
-			}
-			else {
-				dataForecast.push(data[data.length - 1]);
-				break;
-			}
-		}
-
-		startDate = valueDate;
-		for (let i = 0; i < 8; i++) {
-			valueDate = addDays(startDate, i * 7);
-			this.forecastingLabels.push(valueDate);
-			dataForecast.push({ x: valueDate, y: Math.floor(20 * Math.random() + 1) });
-		}
-
-		let dataForecast1 = [];
-		let dataForecast2 = [];
-
-		for (let i = 0; i < dataForecast.length; i++) {
-			dataForecast1.push({ x: dataForecast[i].x, y: dataForecast[i].y + 5 });
-			dataForecast2.push({ x: dataForecast[i].x, y: dataForecast[i].y - 2 });
-		}
-
-		let confidenceIntervalColor = '#ccc';
-
 		this.forecastingData = [
-			{ data: data, label: 'Dengue', fill: false, yAxisID: 'default' },
-			{ data: dataForecast, label: 'Forecast', fill: false, yAxisID: 'default' },
-			{
-				data: dataForecast1, label: '+ Confidence Interval', fill: false, yAxisID: 'default',
-				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor,
-				pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
-			},
-			{
-				data: dataForecast2, label: '- Confidence Interval', fill: '-1', yAxisID: 'default', fillOpacity: .3,
-				borderColor: confidenceIntervalColor, backgroundColor: confidenceIntervalColor,
-				pointBackgroundColor: confidenceIntervalColor, pointBorderColor: confidenceIntervalColor
-			}
+			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default' }
 		];
 	}
 
-	initializeWeeklyChart() {
-		this.weeklyOptions = {
-			scaleShowVerticalLines: false,
-			responsive: true,
-			maintainAspectRatio: false,
-			legend: {
-				position: 'top',
-				labels: {
-					fontColor: 'white'
-				}
-			},
-			scales: {
-				xAxes: [{
-					type: 'time',
-					time: {
-						tooltipFormat: 'DD/MM/YYYY',
-						distribution: 'series'
-					},
-					ticks: {
-						fontColor: 'white',
-						maxRotation: 45,
-						minRotation: 45,
-						maxTicksLimit: 12
-					}
-				}],
-				yAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}]
-			},
-			tooltips: {
-				mode: 'x'
-			}
-		};
-		this.weeklyData = [];
-		this.weeklyLabels = [];
+	refreshForecastingChart(){
+		this.forecastingData = [];
 		let data = [];
-		let startDate = getFirstSunday(this.scrollBarValue);
-		let nowDate = new Date();
-		for (let i = 0; i < 53; i++) {
-			let valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.weeklyLabels.push(valueDate);
-				data.push(Math.floor(200 * Math.random() + 50));
+		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
+			this.forecastingLabels.push(parseInt(week.week));
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
+				data.push({x: week.timestamp, y: parseInt(week.value)});
 			}
-			else {
-				break;
-			}
-		}
-		this.weeklyData = [
-			{ data: data, label: 'Municipalities outbreak', barThickness: 10, maxBarThickness: 10}
+		});
+		this.forecastingData = [
+			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default' }
 		];
 	}
 
-	initializeMonthlyChart() {
-		this.monthlyOptions = {
-			scaleShowVerticalLines: false,
-			responsive: true,
-			maintainAspectRatio: false,
-			legend: {
-				position: 'top',
-				labels: {
-					fontColor: 'white'
-				}
-			},
-			scales: {
-				xAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}],
-				yAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}]
-			},
-			tooltips: {
-				mode: 'index'
-			}
-		};
-		this.monthlyLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-		this.monthlyData = [
-			{ data: [65, 59, 80, 81, 56, 55, 40, 65, 53, 3, 43, 34], label: 'Dengue' },
-			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Severe Dengue' },
-			{ data: [28, 48, 40, 19, 86, 27, 90, 12, 12, 54, 56, 34], label: 'Deaths by Dengue' }
-		];
-	}
-
-	initializeEpidemiologicalBehaviorChart() {
+	initializeQuantileChart() {
 		this.epidemiologicalBehaviorOptions = {
 			scaleShowVerticalLines: false,
 			responsive: true,
@@ -340,20 +320,8 @@ export class DashboardComponent implements OnInit {
 		let datap25 = [];
 		let datap50 = [];
 		let datap75 = [];
-		let startDate = getFirstSunday(this.scrollBarValue);
-		let nowDate = new Date();
-		for (let i = 0; i < 53; i++) {
-			let valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				data.push(Math.floor(100 * Math.random()));
-			}
-			this.epidemiologicalBehaviorLabels.push(valueDate);
-			datap25.push(Math.floor(20 * Math.random()));
-			datap50.push(Math.floor(30 * Math.random() + 20));
-			datap75.push(Math.floor(70 * Math.random() + 50));
-		}
 
-		let yearColor = 'white';
+		let dengueColor = 'white';
 		let p25Color = 'green';
 		let p50Color = 'yellow';
 		let p75Color = 'red';
@@ -361,8 +329,8 @@ export class DashboardComponent implements OnInit {
 		this.epidemiologicalBehaviorData = [
 			{
 				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
-				borderColor: yearColor, backgroundColor: yearColor,
-				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+				borderColor: dengueColor, backgroundColor: dengueColor,
+				pointBackgroundColor: dengueColor, pointBorderColor: dengueColor
 			},
 			{
 				data: datap25, label: 'P25', fill: false,
@@ -384,7 +352,172 @@ export class DashboardComponent implements OnInit {
 
 	}
 
-	initializeMMWR(){
+	refreshQuantileChart(){
+		this.epidemiologicalBehaviorData = [];
+		this.epidemiologicalBehaviorLabels = [];
+		let data = [];
+		let datap25 = [];
+		let datap50 = [];
+		let datap75 = [];
+
+		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
+			this.forecastingLabels.push(parseInt(week.week));
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
+				data.push({x: week.timestamp, y: parseInt(week.value)});
+			}
+			datap25.push({x: week.timestamp, y: parseInt(week.P25)});
+			datap50.push({x: week.timestamp, y: parseInt(week.median)});
+			datap75.push({x: week.timestamp, y: parseInt(week.P75)});
+		});
+		
+		let dengueColor = 'white';
+		let p25Color = 'green';
+		let p50Color = 'yellow';
+		let p75Color = 'red';
+		this.epidemiologicalBehaviorData = [
+			{
+				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
+				borderColor: dengueColor, backgroundColor: dengueColor,
+				pointBackgroundColor: dengueColor, pointBorderColor: dengueColor
+			},
+			{
+				data: datap25, label: 'P25', fill: false,
+				borderColor: p25Color, backgroundColor: p25Color,
+				pointBackgroundColor: p25Color, pointBorderColor: p25Color
+			},
+			{
+				data: datap50, label: 'P50', fill: false,
+				borderColor: p50Color, backgroundColor: p50Color,
+				pointBackgroundColor: p50Color, pointBorderColor: p50Color
+			},
+			{
+				data: datap75, label: 'P75', fill: false,
+				borderColor: p75Color, backgroundColor: p75Color,
+				pointBackgroundColor: p75Color, pointBorderColor: p75Color
+			}
+		];
+	}
+
+	initializeBortmanChart() {
+		this.bortmanOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white',
+						maxRotation: 45,
+						minRotation: 45,
+						maxTicksLimit: 12
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			},
+			tooltips: {
+				mode: 'x'
+			}
+		};
+
+		this.bortmanData = [];
+		this.bortmanLabels = [];
+		let data = [];
+		let dataLL = [];
+		let datapTheshold = [];
+		let datapUL = [];
+
+		let yearColor = 'white';
+		let p25Color = 'green';
+		let p50Color = 'yellow';
+		let p75Color = 'red';
+
+		this.bortmanData = [
+			{
+				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: dataLL, label: 'Lower Limit IC95%', fill: false,
+				borderColor: p25Color, backgroundColor: p25Color,
+				pointBackgroundColor: p25Color, pointBorderColor: p25Color
+			},
+			{
+				data: datapTheshold, label: 'Threshold', fill: false,
+				borderColor: p50Color, backgroundColor: p50Color,
+				pointBackgroundColor: p50Color, pointBorderColor: p50Color
+			},
+			{
+				data: datapUL, label: 'Upper Limit IC95%', fill: false,
+				borderColor: p75Color, backgroundColor: p75Color,
+				pointBackgroundColor: p75Color, pointBorderColor: p75Color
+			}
+		];
+	}
+
+	refreshBortmanChart(){
+		this.bortmanData = [];
+		this.bortmanLabels = [];
+		let data = [];
+		let dataLL = [];
+		let datapTheshold = [];
+		let datapUL = [];
+		
+		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
+			this.forecastingLabels.push(parseInt(week.week));
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
+				data.push({x: week.timestamp, y: parseInt(week.value)});
+			}
+			dataLL.push({x: week.timestamp, y: parseInt(week.lower_limit_IC95)});
+			datapTheshold.push({x: week.timestamp, y: parseInt(week.threshold_IC95)});
+			datapUL.push({x: week.timestamp, y: parseInt(week.upper_limit_IC95)});
+		});
+		
+		let yearColor = 'white';
+		let p25Color = 'green';
+		let p50Color = 'yellow';
+		let p75Color = 'red';
+
+		this.bortmanData = [
+			{
+				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: dataLL, label: 'Lower Limit IC95%', fill: false,
+				borderColor: p25Color, backgroundColor: p25Color,
+				pointBackgroundColor: p25Color, pointBorderColor: p25Color
+			},
+			{
+				data: datapTheshold, label: 'Threshold', fill: false,
+				borderColor: p50Color, backgroundColor: p50Color,
+				pointBackgroundColor: p50Color, pointBorderColor: p50Color
+			},
+			{
+				data: datapUL, label: 'Upper Limit IC95%', fill: false,
+				borderColor: p75Color, backgroundColor: p75Color,
+				pointBackgroundColor: p75Color, pointBorderColor: p75Color
+			}
+		];
+	}
+
+	initializeMMWRChart() {
 		this._MMWROptions = {
 			scaleShowVerticalLines: false,
 			responsive: true,
@@ -426,18 +559,6 @@ export class DashboardComponent implements OnInit {
 		let upperLimit = [];
 		let lowerLimit = [];
 		let expectedReason = [];
-		let startDate = getFirstSunday(this.scrollBarValue);
-		let nowDate = new Date();
-		for (let i = 0; i < 53; i++) {
-			let valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				data.push((3 * Math.random()));
-			}
-			this._MMWRLabels.push(valueDate);
-			upperLimit.push((2 * Math.random() + 3));
-			lowerLimit.push((-2 * Math.random() - 1));
-			expectedReason.push(1);
-		}
 
 		let yearColor = 'white';
 		let upperLimitColor = 'red';
@@ -446,7 +567,7 @@ export class DashboardComponent implements OnInit {
 
 		this._MMWRData = [
 			{
-				data: data, label: 'Observed Reason', fill: false, pointRadius: 7, showLine: false,
+				data: data, label: 'Observed Reason ' + this.scrollBarValue, fill: false, pointRadius: 7, showLine: false,
 				borderColor: yearColor, backgroundColor: yearColor,
 				pointBackgroundColor: yearColor, pointBorderColor: yearColor
 			},
@@ -465,6 +586,108 @@ export class DashboardComponent implements OnInit {
 				borderColor: expectedReasonColor, backgroundColor: expectedReasonColor,
 				pointBackgroundColor: expectedReasonColor, pointBorderColor: expectedReasonColor
 			}
+		];
+	}
+
+	refreshMMWRChart(){
+		this._MMWRData = [];
+		this._MMWRLabels = [];
+		let data = [];
+		let upperLimit = [];
+		let lowerLimit = [];
+		let expectedReason = [];
+		
+		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
+			this.forecastingLabels.push(parseInt(week.week));
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
+				data.push({x: week.timestamp, y: week.observed_reason});
+			}
+			upperLimit.push({x: week.timestamp, y: week.upper_limit});
+			lowerLimit.push({x: week.timestamp, y: week.lower_limit});
+			expectedReason.push({x: week.timestamp, y: week.expected_reason});
+		});
+		
+		let yearColor = 'white';
+		let upperLimitColor = 'red';
+		let lowerLimitColor = 'green';
+		let expectedReasonColor = 'black';
+
+		this._MMWRData = [
+			{
+				data: data, label: 'Observed Reason ' + this.scrollBarValue, fill: false, pointRadius: 7, showLine: false,
+				borderColor: yearColor, backgroundColor: yearColor,
+				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: upperLimit, label: 'Upper Limit', fill: false,
+				borderColor: upperLimitColor, backgroundColor: upperLimitColor,
+				pointBackgroundColor: upperLimitColor, pointBorderColor: upperLimitColor
+			},
+			{
+				data: lowerLimit, label: 'Lower Limit', fill: false,
+				borderColor: lowerLimitColor, backgroundColor: lowerLimitColor,
+				pointBackgroundColor: lowerLimitColor, pointBorderColor: lowerLimitColor
+			},
+			{
+				data: expectedReason, label: 'Expected Reason', fill: false, pointRadius: 3, showLine: false,
+				borderColor: expectedReasonColor, backgroundColor: expectedReasonColor,
+				pointBackgroundColor: expectedReasonColor, pointBorderColor: expectedReasonColor
+			}
+		];
+	}
+
+	initializeOutbreakChart() {
+		this.outbreakOptions = {
+			scaleShowVerticalLines: false,
+			responsive: true,
+			maintainAspectRatio: false,
+			legend: {
+				position: 'top',
+				labels: {
+					fontColor: 'white'
+				}
+			},
+			scales: {
+				xAxes: [{
+					type: 'time',
+					time: {
+						tooltipFormat: 'DD/MM/YYYY',
+						distribution: 'series'
+					},
+					ticks: {
+						fontColor: 'white',
+						maxRotation: 45,
+						minRotation: 45,
+						maxTicksLimit: 12
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontColor: 'white'
+					}
+				}]
+			},
+			tooltips: {
+				mode: 'x'
+			}
+		};
+		this.outbreakData = [];
+		this.outbreakLabels = [];
+		let data = [];
+		let startDate = getFirstSunday(this.scrollBarValue);
+		let nowDate = new Date();
+		for (let i = 0; i < 53; i++) {
+			let valueDate = addDays(startDate, i * 7);
+			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
+				this.outbreakLabels.push(valueDate);
+				data.push(Math.floor(200 * Math.random() + 50));
+			}
+			else {
+				break;
+			}
+		}
+		this.outbreakData = [
+			{ data: data, label: 'Municipalities outbreak', barThickness: 10, maxBarThickness: 10 }
 		];
 	}
 
@@ -732,7 +955,7 @@ export class DashboardComponent implements OnInit {
 					this.citiesDropDownList.push(municipality.name);
 				});
 				this.idStateSelected = state.code;
-
+				this.queryStateValues();
 				this.layerStates.forEach(feature => {
 					this.layerStates.overrideStyle(feature, { visible: false });
 				});
@@ -749,7 +972,6 @@ export class DashboardComponent implements OnInit {
 				this.map.setZoom(7);
 			}
 		});
-		this.randomDashboard();
 	}
 
 	onStateDeselect() {
@@ -765,7 +987,7 @@ export class DashboardComponent implements OnInit {
 		this.layerMunicipalities.forEach(feature => {
 			this.layerMunicipalities.revertStyle(feature);
 		});
-		this.randomDashboard();
+		this.refreshDashBoard();
 	}
 
 	onCitySelect() {
@@ -776,17 +998,17 @@ export class DashboardComponent implements OnInit {
 						this.map.setCenter({ lat: municipality.lat, lng: municipality.lng });
 						this.map.setZoom(8);
 						this.idCitySelected = municipality.code;
+						this.queryCityValues();
 						return;
 					}
 				});
 			}
 		});
-		this.randomDashboard();
 	}
 
 	onCityDeselect() {
 		this.idCitySelected = "";
-		this.randomDashboard();
+		this.refreshDashBoard();
 	}
 
 	centerMap() {
@@ -799,15 +1021,15 @@ export class DashboardComponent implements OnInit {
 			clearInterval(this.intervalID);
 		}
 		let self = this;
-		let startYear = 2010;
+		let startYear = this.minScrollBarYear;
 		this.intervalID = setInterval(function () {
 			self.scrollBarValue = startYear;
 			startYear = startYear + 1;
-			self.randomDashboard();
-			if (startYear > 2020) {
+			self.refreshDashBoard();
+			if (startYear > self.maxScrollBarYear) {
 				clearInterval(self.intervalID);
 			}
-		}, 1000);
+		}, 2000);
 	}
 
 	pauseTimer() {
@@ -816,7 +1038,7 @@ export class DashboardComponent implements OnInit {
 
 	scrollBarChange(event: MatSliderChange) {
 		this.scrollBarValue = event.value;
-		this.randomDashboard();
+		this.refreshDashBoard();
 	}
 
 	updateCharts() {
@@ -825,42 +1047,24 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	randomKPIValues() {
-		this._KPI.forEach((item) => {
-			item.totalCases = Number((100 * Math.random()).toFixed(0));
-			item.totalCasesTendency = Number((20 * Math.random() - 10).toFixed(1));
-			item.indicator = Number((100 * Math.random()).toFixed(0));
-			item.indicatorTendency = Number((20 * Math.random() - 10).toFixed(1));
-		});
-	}
-
 	randomCharts() {
-
-		for (let i = 0; i < this.monthlyData[0].data.length; i++) {
-			this.monthlyData[0].data[i] = Math.floor(100 * Math.random());
-			this.monthlyData[1].data[i] = Math.floor(100 * Math.random());
-			this.monthlyData[2].data[i] = Math.floor(100 * Math.random());
-		}
-
-
-
-		this.weeklyData = [];
-		this.weeklyLabels = [];
+		this.outbreakData = [];
+		this.outbreakLabels = [];
 		let data = [];
 		let startDate = getFirstSunday(this.scrollBarValue);
 		let nowDate = new Date();
 		for (let i = 0; i < 53; i++) {
 			let valueDate = addDays(startDate, i * 7);
 			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.weeklyLabels.push(valueDate);
+				this.outbreakLabels.push(valueDate);
 				data.push(Math.floor(200 * Math.random() + 50));
 			}
 			else {
 				break;
 			}
 		}
-		this.weeklyData = [
-			{ data: data, label: 'Municipalities outbreak', barThickness: 8, maxBarThickness: 10}
+		this.outbreakData = [
+			{ data: data, label: 'Municipalities outbreak', barThickness: 8, maxBarThickness: 10 }
 		];
 
 
@@ -1032,7 +1236,7 @@ export class DashboardComponent implements OnInit {
 
 	randomDashboard() {
 		this.randomMapValues();
-		this.randomKPIValues();
+		this.refreshKPIValues();
 		this.randomTable();
 		this.randomDengometer();
 		this.randomCharts();
@@ -1101,6 +1305,7 @@ export class DashboardComponent implements OnInit {
 			return num.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 		}
 	}
+
 }
 
 function addDays(date: Date, days: number) {
