@@ -2,7 +2,8 @@
     <mat-progress-bar id="progress-bar" mode="indeterminate"></mat-progress-bar>
 </div>
 
-<div class="container-fluid p-1 my-1 bg-dark text-light">
+<hr class="bg-light m-2">
+<div class="container-fluid bg-dark text-light">
     <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
         <div class="carousel-inner text-center" style="font-size: large;">
             <div class="carousel-item active">
@@ -24,6 +25,7 @@
         </a>
     </div>
 </div>
+<hr class="bg-light m-2">
 
 <div class="container-fluid p-3 my-1 bg-dark text-light">
     <div class="row justify-content-center m-2">
@@ -83,7 +85,7 @@
                                 </span>
                             </div>
                             <div class="text-center mb-1" style="font-size: xx-large;">
-                                <span>
+                                <span class="p-1">
                                     <fa-icon *ngIf="item.totalCasesTendency >= 0" [icon]="['fas', 'caret-up']"
                                         style="color: red"></fa-icon>
                                     <fa-icon *ngIf="item.totalCasesTendency < 0" [icon]="['fas', 'caret-down']"
@@ -117,7 +119,7 @@
                 </div>
             </div>
             <div class="text-light card col-md-3 p-2 KPI" style="border-color: white; border-width: 2px;">
-                <div class="text-center" style="margin-bottom: 50px; margin-top: 50px;">
+                <div class="text-center" style="margin-bottom: 30px; margin-top: 30px;">
                     <span style="height: 100%; font-size: xx-large;">
                         DENG&nbsp;
                         <fa-icon id="dengometer-icon" [icon]="['fas', 'exclamation-circle']"
@@ -125,6 +127,7 @@
                         &nbsp;METER
                     </span>
                 </div>
+                <small class="text-muted text-right">Epidemiological Week {{maxWeekData}}, {{maxScrollBarYear}}</small>
                 <small class="text-muted text-right">Possible Outbreak Indicator</small>
             </div>
         </div>
@@ -137,17 +140,15 @@
                 <nav>
                     <div class="nav nav-tabs" id="nav-tab" role="tablist">
                         <a class="nav-item nav-link active" id="nav-correlations-tab" data-toggle="tab" href="#nav-1" role="tab" 
-                            aria-controls="nav-correlations" aria-selected="true">Dengue</a>
+                            aria-controls="nav-correlations" aria-selected="true">Dengue Cases</a>
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-3" role="tab"
-                            aria-controls="nav-timeline" aria-selected="false">Quantile</a>
+                            aria-controls="nav-timeline" aria-selected="false">Endemic Channel: Quantiles</a>
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-4" role="tab"
-                            aria-controls="nav-timeline" aria-selected="false">Bortman</a>
+                            aria-controls="nav-timeline" aria-selected="false">Endemic Channel: Bortman</a>
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-5" role="tab"
-                            aria-controls="nav-timeline" aria-selected="false">MMWR</a>
-                        <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-2" role="tab"
-                            aria-controls="nav-timeline" aria-selected="false">Cities Outbreak</a>
+                            aria-controls="nav-timeline" aria-selected="false">Endemic Channel: Ratio</a>
                         <a class="nav-item nav-link" id="nav-timeline-tab" data-toggle="tab" href="#nav-6" role="tab"
-                            aria-controls="nav-timeline" aria-selected="false">Table</a>
+                            aria-controls="nav-timeline" aria-selected="false">Top Cities</a>
                     </div>
                 </nav>
                 <div class="tab-content" id="nav-tabContent">
@@ -156,13 +157,6 @@
                         <div>
                             <canvas baseChart height="650" [datasets]="forecastingData" [options]="forecastingOptions"
                                 [legend]="forecastingLegends" [chartType]="forecastingType">
-                            </canvas>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="nav-2" role="tabpanel" aria-labelledby="nav-timeline-tab">
-                        <div>
-                            <canvas baseChart height="650" [datasets]="outbreakData" [labels]="outbreakLabels"
-                                [options]="outbreakOptions" [legend]="outbreakLegends" [chartType]="outbreakType">
                             </canvas>
                         </div>
                     </div>

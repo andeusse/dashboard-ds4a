@@ -5,6 +5,11 @@
     margin: 2px;
 }
 
+.news-container{
+    border-width: 2px;
+    border-color: white;
+}
+
 .tab-content>.tab-pane {
     display: block;
     height: 0;

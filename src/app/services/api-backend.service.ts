@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { CountryAPI, StateCityAPI } from '../data-structure/api';
+import { CountryAPI, StateCityAPI, CityTables, StateTables } from '../data-structure/api';
 
 @Injectable({
 	providedIn: 'root'
@@ -10,8 +10,11 @@ export class ApiBackendService {
 	private host: string = "http://localhost:5000/";
 
 	private urlGetCountry: string = this.host;
-	private urlGetState:string = this.host + "?state_id={0}"
-	private urlGetCity:string = this.host + "?city_id={0}"
+	private urlGetState:string = this.host + "?state_id={0}";
+	private urlGetCity:string = this.host + "?city_id={0}";
+	private urlGetTableCity:string = this.host + "table/city";
+	private urlGetTableState:string = this.host + "table/state";
+
 	headers = new HttpHeaders();
 
 	constructor(private httpClient: HttpClient) {
@@ -33,6 +36,16 @@ export class ApiBackendService {
 	getCityValues(city: string){
 		let urlTemp = this.FormatString(this.urlGetCity, city);
 		return this.httpClient.get<StateCityAPI>(urlTemp).toPromise();
+	}
+
+	getTableCityValues(){
+		let urlTemp = this.urlGetTableCity;
+		return this.httpClient.get<CityTables>(urlTemp).toPromise();
+	}
+
+	getTableStateValues(){
+		let urlTemp = this.urlGetTableState;
+		return this.httpClient.get<StateTables>(urlTemp).toPromise();
 	}
 
 	FormatString(str: string, ...val: string[]) {

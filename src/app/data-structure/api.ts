@@ -56,3 +56,38 @@ export class Week {
     public upper_limit_IC95: string;
     public threshold_IC95: string;
 }
+
+export class CityTables{
+    public table: Array<YearCityTable>;
+}
+
+export class YearCityTable{
+    public year: string;
+    public cities: Array<CityTable>;
+}
+
+export class CityTable{
+    public city: string;
+    public code: string;
+    public state: string;
+    public value: string;
+    public incidence: string;
+    public lethality: string;
+}
+
+export class StateTables{
+    public table: Array<YearStateTable>;
+}
+
+export class YearStateTable{
+    public year: string;
+    public states: Array<StateTable>;
+}
+
+export class StateTable{
+    public state: string;
+    public code: string;
+    public value: string;
+    public incidence: string;
+    public lethality: string;
+}

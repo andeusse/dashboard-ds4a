@@ -12,7 +12,8 @@ import { MatSliderChange } from '@angular/material/slider';
 import { News } from '../data-structure/news'
 
 import { ApiBackendService } from "../services/api-backend.service";
-import { CountryAPI, StateCityAPI, Dengue, SevereDengue, DeathsByDengue } from '../data-structure/api';
+import { CountryAPI, StateCityAPI, Dengue, SevereDengue, DeathsByDengue, CityTables, YearCityTable, StateTables } from '../data-structure/api';
+import { features } from 'process';
 
 @Component({
 	selector: 'app-dashboard',
@@ -32,7 +33,7 @@ export class DashboardComponent implements OnInit {
 
 	map: google.maps.Map;
 	layerStates = new google.maps.Data({ map: this.map });
-	layerMunicipalities = new google.maps.Data({ map: this.map });
+	layerCities = new google.maps.Data({ map: this.map });
 	minLegendValue: number;
 	maxLegendValue: number;
 
@@ -65,12 +66,6 @@ export class DashboardComponent implements OnInit {
 	forecastingLegends = true;
 	forecastingType = 'line';
 
-	outbreakData = [];
-	outbreakLabels = [];
-	outbreakOptions = {};
-	outbreakLegends = true;
-	outbreakType = 'bar';
-
 	bortmanData = [];
 	bortmanLabels = [];
 	bortmanOptions = {};
@@ -91,6 +86,9 @@ export class DashboardComponent implements OnInit {
 
 	countryValues: CountryAPI;
 	selectedStateCityValues: StateCityAPI;
+	cityTableValues: CityTables;
+	stateTableValues: StateTables;
+
 	dataSet: CountryAPI | StateCityAPI;
 	dataSetCurrentYearDengue: Dengue;
 	dataSetCurrentYearSevereDengue: SevereDengue;
@@ -108,6 +106,8 @@ export class DashboardComponent implements OnInit {
 	ngOnInit(): void {
 		this.initializeDashboard();
 		this.queryCountryValues();
+		this.queryTableCityValues();
+		this.queryTableStateValues();
 	}
 
 	queryCountryValues() {
@@ -115,7 +115,73 @@ export class DashboardComponent implements OnInit {
 		this.ApiBackendService.getCountryValues().then(value => {
 			this.countryValues = value;
 			this.refreshDashBoard();
-			this.isLoading = false;
+		});
+	}
+
+	queryTableStateValues(){
+		this.isLoading = true;
+		this.ApiBackendService.getTableStateValues().then(value => {
+			this.stateTableValues = value;
+			this.initializeLayerStates();
+		});
+	}
+
+	refreshStateMapValues(){
+		let values = [];
+		this.stateTableValues.table.forEach(year => {
+			if (parseInt(year.year) == this.scrollBarValue) {
+				year.states.forEach(state => {
+					this.layerStates.getFeatureById(state.code).setProperty('Value', state.incidence);
+					values.push(state.incidence);
+				});
+				this.minLegendValue = Math.min(...values);
+				this.maxLegendValue = Math.max(...values);
+				return;
+			}
+		});
+	}
+
+	queryTableCityValues(){
+		this.isLoading = true;
+		this.ApiBackendService.getTableCityValues().then(value => {
+			this.cityTableValues = value;
+			this.initializeLayerCities();
+		});
+	}
+
+	refreshCityTableValues(){
+		this.cityTableValues.table.forEach(year => {
+			if (parseInt(year.year) == this.scrollBarValue) {
+				this.MunicipalitiesTable = [];
+				year.cities.forEach(city => {
+					this.MunicipalitiesTable.push(new MunicipalityTable(city.state, city.city, parseFloat(city.incidence), parseFloat(city.lethality)));
+				});
+				this.sortByIncidence();
+				return;
+			}
+		});
+	}
+
+	refreshCityMapValues(){
+		let values = [];
+		this.cityTableValues.table.forEach(year => {
+			if (parseInt(year.year) == this.scrollBarValue) {
+				year.cities.forEach(city => {
+					let feature = this.layerCities.getFeatureById(city.code);
+					if(feature){
+						let code: string = city.code;
+						let stateCode = code.substring(0, 2);
+						if (this.idStateSelected == stateCode) {
+							feature.setProperty('Value', city.incidence);
+							values.push(city.incidence);
+						}
+					}
+					this.minLegendValue = Math.min(...values);
+					this.maxLegendValue = Math.max(...values);
+				});
+				this.sortByIncidence();
+				return;
+			}
 		});
 	}
 
@@ -123,9 +189,7 @@ export class DashboardComponent implements OnInit {
 		this.isLoading = true;
 		this.ApiBackendService.getStateValues(this.idStateSelected).then(value => {
 			this.selectedStateCityValues = value;
-			console.log(value);
 			this.refreshDashBoard();
-			this.isLoading = false;
 		});
 	}
 
@@ -134,7 +198,6 @@ export class DashboardComponent implements OnInit {
 		this.ApiBackendService.getCityValues(this.idCitySelected).then(value => {
 			this.selectedStateCityValues = value;
 			this.refreshDashBoard();
-			this.isLoading = false;
 		});
 	}
 
@@ -145,13 +208,10 @@ export class DashboardComponent implements OnInit {
 
 		this.initializeKPI();
 		this.initializeForecastingChart();
-		this.initializeOutbreakChart();
 		this.initializeQuantileChart();
 		this.initializeBortmanChart();
 		this.initializeMMWRChart();
 		this.initializeMap();
-		this.initializeLayerMunicipalities();
-		this.initializeLayerStates();
 		this.initializeDropDownStates();
 		this.initializeDropDownCities();
 
@@ -190,6 +250,16 @@ export class DashboardComponent implements OnInit {
 		this.refreshQuantileChart();
 		this.refreshBortmanChart();
 		this.refreshMMWRChart();
+		this.refreshCityTableValues();
+		this.refreshDengometer()
+		if(this.idStateSelected == "" && this.idCitySelected == ""){
+			this.refreshStateMapValues();
+		}
+		else{
+			this.refreshCityMapValues();
+		}
+
+		this.isLoading = false;
 	}
 
 	initializeKPI() {
@@ -259,8 +329,12 @@ export class DashboardComponent implements OnInit {
 		this.forecastingData = [];
 		this.forecastingLabels = [];
 		let data = [];
+		
+		let color = "white";
 		this.forecastingData = [
-			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default' }
+			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default',
+			borderColor: color, backgroundColor: color,
+			pointBackgroundColor: color, pointBorderColor: color }
 		];
 	}
 
@@ -273,8 +347,11 @@ export class DashboardComponent implements OnInit {
 				data.push({x: week.timestamp, y: parseInt(week.value)});
 			}
 		});
+		let color = "white";
 		this.forecastingData = [
-			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default' }
+			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default',
+			borderColor: color, backgroundColor: color,
+			pointBackgroundColor: color, pointBorderColor: color }
 		];
 	}
 
@@ -479,13 +556,15 @@ export class DashboardComponent implements OnInit {
 		let datapUL = [];
 		
 		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
-			this.forecastingLabels.push(parseInt(week.week));
-			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
-				data.push({x: week.timestamp, y: parseInt(week.value)});
+			if(parseInt(week.week) != 53){
+				this.forecastingLabels.push(parseInt(week.week));
+				if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
+					data.push({x: week.timestamp, y: parseInt(week.value)});
+				}
+				dataLL.push({x: week.timestamp, y: parseInt(week.lower_limit_IC95)});
+				datapTheshold.push({x: week.timestamp, y: parseInt(week.threshold_IC95)});
+				datapUL.push({x: week.timestamp, y: parseInt(week.upper_limit_IC95)});
 			}
-			dataLL.push({x: week.timestamp, y: parseInt(week.lower_limit_IC95)});
-			datapTheshold.push({x: week.timestamp, y: parseInt(week.threshold_IC95)});
-			datapUL.push({x: week.timestamp, y: parseInt(week.upper_limit_IC95)});
 		});
 		
 		let yearColor = 'white';
@@ -608,13 +687,13 @@ export class DashboardComponent implements OnInit {
 		});
 		
 		let yearColor = 'white';
-		let upperLimitColor = 'red';
-		let lowerLimitColor = 'green';
+		let upperLimitColor = '#FF8000';
+		let lowerLimitColor = '#2848DF';
 		let expectedReasonColor = 'black';
 
 		this._MMWRData = [
 			{
-				data: data, label: 'Observed Reason ' + this.scrollBarValue, fill: false, pointRadius: 7, showLine: false,
+				data: data, label: 'Observed Reason ' + this.scrollBarValue, fill: false, pointRadius: 5, showLine: false,
 				borderColor: yearColor, backgroundColor: yearColor,
 				pointBackgroundColor: yearColor, pointBorderColor: yearColor
 			},
@@ -636,59 +715,38 @@ export class DashboardComponent implements OnInit {
 		];
 	}
 
-	initializeOutbreakChart() {
-		this.outbreakOptions = {
-			scaleShowVerticalLines: false,
-			responsive: true,
-			maintainAspectRatio: false,
-			legend: {
-				position: 'top',
-				labels: {
-					fontColor: 'white'
-				}
-			},
-			scales: {
-				xAxes: [{
-					type: 'time',
-					time: {
-						tooltipFormat: 'DD/MM/YYYY',
-						distribution: 'series'
-					},
-					ticks: {
-						fontColor: 'white',
-						maxRotation: 45,
-						minRotation: 45,
-						maxTicksLimit: 12
-					}
-				}],
-				yAxes: [{
-					ticks: {
-						fontColor: 'white'
-					}
-				}]
-			},
-			tooltips: {
-				mode: 'x'
-			}
-		};
-		this.outbreakData = [];
-		this.outbreakLabels = [];
-		let data = [];
-		let startDate = getFirstSunday(this.scrollBarValue);
-		let nowDate = new Date();
-		for (let i = 0; i < 53; i++) {
-			let valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.outbreakLabels.push(valueDate);
-				data.push(Math.floor(200 * Math.random() + 50));
-			}
-			else {
-				break;
-			}
+	refreshDengometer(){
+		let value;
+		let expectedReason;
+		let upperlimit;
+
+		let tempData;
+
+		if(this.idStateSelected == "" && this.idCitySelected == ""){
+			tempData = this.countryValues;
 		}
-		this.outbreakData = [
-			{ data: data, label: 'Municipalities outbreak', barThickness: 10, maxBarThickness: 10 }
-		];
+		else{
+			tempData = this.selectedStateCityValues;
+		}
+		tempData.dengue.forEach(year => {
+			if(parseInt(year.year) == this.maxScrollBarYear){
+				year.weekly.forEach(week => {
+					if(parseInt(week.week) == this.maxWeekData){
+						value = parseFloat(week.observed_reason);
+						expectedReason = parseFloat(week.expected_reason);
+						upperlimit = parseFloat(week.upper_limit);
+						let color = 'green';
+						if (value > upperlimit) {
+							color = 'red';
+						} else if (value > expectedReason) {
+							color = 'orange';
+						}
+						document.getElementById('dengometer-icon').style.color = color;
+						return;
+					}
+				});
+			}
+		});
 	}
 
 	initializeMap() {
@@ -797,7 +855,7 @@ export class DashboardComponent implements OnInit {
 		let self = this;
 		this.layerStates = new google.maps.Data({ map: this.map });
 		this.layerStates.loadGeoJson('assets/Colombia.geo.json', { idPropertyName: 'Code' }, function (features) {
-			self.randomMapValues();
+
 		});
 
 		this.layerStates.setStyle(function (feature) {
@@ -835,17 +893,16 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	initializeLayerMunicipalities() {
+	initializeLayerCities() {
 		let self = this;
-		this.layerMunicipalities = new google.maps.Data({ map: this.map });
-		this.layerMunicipalities.loadGeoJson('/assets/ColombiaMunSimp.json', { idPropertyName: 'Code' }, function (features) {
-			self.randomMapValues();
-			self.minLegendValue = 0;
-			self.maxLegendValue = 200;
-			self.isLoading = false;
+		this.layerCities = new google.maps.Data({ map: this.map });
+		this.layerCities.loadGeoJson('/assets/ColombiaMunSimp.json', { idPropertyName: 'Code' }, function (features) {
+			features.forEach(feature => {
+				feature.setProperty('Value', 0);
+			});
 		});
 
-		this.layerMunicipalities.setStyle(function (feature) {
+		this.layerCities.setStyle(function (feature) {
 			let value = feature.getProperty('Value');
 			let color = self.setFeatureColor(value);
 			return ({
@@ -858,7 +915,7 @@ export class DashboardComponent implements OnInit {
 			});
 		});
 
-		this.layerMunicipalities.addListener('click', function (event) {
+		this.layerCities.addListener('click', function (event) {
 			self.idCitySelected = event.feature.getProperty('Code');
 			self.States.states.forEach(state => {
 				if (state.code == self.idStateSelected) {
@@ -866,9 +923,6 @@ export class DashboardComponent implements OnInit {
 						if (municipality.code == self.idCitySelected) {
 							self.citiesSelected = [];
 							self.citiesSelected[0] = municipality.name;
-							self.map.setCenter({ lat: municipality.lat, lng: municipality.lng });
-							self.map.setZoom(8);
-							self.randomDashboard();
 							return;
 						}
 					});
@@ -876,13 +930,13 @@ export class DashboardComponent implements OnInit {
 			});
 		});
 
-		this.layerMunicipalities.addListener('mouseover', function (event) {
-			self.layerMunicipalities.overrideStyle(event.feature, { strokeWeight: 5, fillOpacity: 1 });
+		this.layerCities.addListener('mouseover', function (event) {
+			self.layerCities.overrideStyle(event.feature, { strokeWeight: 5, fillOpacity: 1 });
 			self.setLegendValue(true, event.feature);
 		});
 
-		this.layerMunicipalities.addListener('mouseout', function (event) {
-			self.layerMunicipalities.overrideStyle(event.feature, { strokeWeight: 0.5, fillOpacity: 0.5 });
+		this.layerCities.addListener('mouseout', function (event) {
+			self.layerCities.overrideStyle(event.feature, { strokeWeight: 0.5, fillOpacity: 0.5 });
 			self.setLegendValue(false);
 		});
 	}
@@ -891,7 +945,7 @@ export class DashboardComponent implements OnInit {
 		if (showValue) {
 			var percent = (feature.getProperty('Value') - this.minLegendValue) / (this.maxLegendValue - this.minLegendValue) * 100;
 			document.getElementById('data-label').textContent = feature.getProperty('Name');
-			document.getElementById('data-value').textContent = feature.getProperty('Value').toLocaleString() + ' cases';
+			document.getElementById('data-value').textContent = feature.getProperty('Value').toLocaleString() + ' [Cases x 100000 people]';
 			document.getElementById('data-box').style.display = 'block';
 			document.getElementById('data-caret').style.display = 'block';
 			document.getElementById('data-caret').style.paddingLeft = percent + '%';
@@ -931,7 +985,6 @@ export class DashboardComponent implements OnInit {
 			this.States.states.forEach(state => {
 				this.statesDropDownList.push(state.name);
 			});
-			this.randomTable();
 		});
 	}
 
@@ -959,13 +1012,14 @@ export class DashboardComponent implements OnInit {
 				this.layerStates.forEach(feature => {
 					this.layerStates.overrideStyle(feature, { visible: false });
 				});
-				this.layerMunicipalities.forEach(feature => {
+				this.layerCities.forEach(feature => {
 					let code: string = feature.getProperty('Code');
 					let stateCode = code.substring(0, 2);
 					if (this.idStateSelected == stateCode) {
-						this.layerMunicipalities.overrideStyle(feature, { visible: true });
-					} else {
-						this.layerMunicipalities.overrideStyle(feature, { visible: false });
+						this.layerCities.overrideStyle(feature, { visible: true });
+					} 
+					else {
+						this.layerCities.overrideStyle(feature, { visible: false });
 					}
 				});
 
@@ -980,12 +1034,11 @@ export class DashboardComponent implements OnInit {
 		this.citiesDropDownList = [];
 		this.citiesSelected = [];
 		this.centerMap();
-
 		this.layerStates.forEach(feature => {
 			this.layerStates.revertStyle(feature);
 		});
-		this.layerMunicipalities.forEach(feature => {
-			this.layerMunicipalities.revertStyle(feature);
+		this.layerCities.forEach(feature => {
+			this.layerCities.revertStyle(feature);
 		});
 		this.refreshDashBoard();
 	}
@@ -995,8 +1048,6 @@ export class DashboardComponent implements OnInit {
 			if (this.statesSelected[0] == state.name) {
 				state.municipalities.forEach(municipality => {
 					if (this.citiesSelected[0] == municipality.name) {
-						this.map.setCenter({ lat: municipality.lat, lng: municipality.lng });
-						this.map.setZoom(8);
 						this.idCitySelected = municipality.code;
 						this.queryCityValues();
 						return;
@@ -1008,7 +1059,7 @@ export class DashboardComponent implements OnInit {
 
 	onCityDeselect() {
 		this.idCitySelected = "";
-		this.refreshDashBoard();
+		this.queryStateValues();
 	}
 
 	centerMap() {
@@ -1048,25 +1099,9 @@ export class DashboardComponent implements OnInit {
 	}
 
 	randomCharts() {
-		this.outbreakData = [];
-		this.outbreakLabels = [];
 		let data = [];
 		let startDate = getFirstSunday(this.scrollBarValue);
 		let nowDate = new Date();
-		for (let i = 0; i < 53; i++) {
-			let valueDate = addDays(startDate, i * 7);
-			if (valueDate.getFullYear() <= this.scrollBarValue && valueDate <= nowDate) {
-				this.outbreakLabels.push(valueDate);
-				data.push(Math.floor(200 * Math.random() + 50));
-			}
-			else {
-				break;
-			}
-		}
-		this.outbreakData = [
-			{ data: data, label: 'Municipalities outbreak', barThickness: 8, maxBarThickness: 10 }
-		];
-
 
 		if (this.scrollBarValue == this.maxScrollBarYear) {
 			this.forecastingData = [];
@@ -1221,51 +1256,6 @@ export class DashboardComponent implements OnInit {
 
 
 		this.updateCharts();
-	}
-
-	randomMapValues() {
-		this.layerStates.forEach(feature => {
-			feature.setProperty('Value', Math.floor(Math.random() * 200))
-		});
-		this.layerMunicipalities.forEach(feature => {
-			feature.setProperty('Value', Math.floor(Math.random() * 200))
-		});
-		this.minLegendValue = 0;
-		this.maxLegendValue = 200;
-	}
-
-	randomDashboard() {
-		this.randomMapValues();
-		this.refreshKPIValues();
-		this.randomTable();
-		this.randomDengometer();
-		this.randomCharts();
-	}
-
-	randomTable() {
-		this.MunicipalitiesTable = [];
-
-		this.States.states.forEach(state => {
-			state.municipalities.forEach(municipality => {
-				let randomValueIncidence = Math.floor(600 * Math.random());
-				let randomValueLethality = Math.floor(25 * Math.random());
-				this.MunicipalitiesTable.push(new MunicipalityTable(state.name, municipality.name, randomValueIncidence, randomValueLethality))
-			})
-		});
-		this.sortByIncidence();
-	}
-
-	randomDengometer() {
-		let randomValue = Math.floor(1000 * Math.random());
-		let color = 'green';
-		if (randomValue > 750) {
-			color = 'red';
-		} else if (randomValue > 500) {
-			color = 'orange';
-		} else if (randomValue > 250) {
-			color = '#FFDB58';
-		}
-		document.getElementById('dengometer-icon').style.color = color;
 	}
 
 	applyFilter(event: Event) {
