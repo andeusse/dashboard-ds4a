@@ -2,7 +2,7 @@ export class States{
     public states: Array<State>;
 }
 
-export class Municipality{
+export class City{
     public code: string;
     public name: string;
     public lat: number;
@@ -12,5 +12,5 @@ export class Municipality{
 export class State{
     public code: string;
     public name: string;
-    public municipalities: Array<Municipality>;
+    public municipalities: Array<City>;
 }

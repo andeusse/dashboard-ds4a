@@ -4,16 +4,16 @@ import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { BaseChartDirective } from 'ng2-charts';
 import { IDropdownSettings } from 'ng-multiselect-dropdown';
-import { States } from "../data-structure/departmens-municipalities"
+import { States } from "../data-structure/states-cities"
 import { StatesJsonService } from "../services/states-json.service";
 import { Indicator } from '../data-structure/indicator';
-import { MunicipalityTable } from '../data-structure/municipality-table';
+import { CityTable } from '../data-structure/city-table';
 import { MatSliderChange } from '@angular/material/slider';
 import { News } from '../data-structure/news'
 
 import { ApiBackendService } from "../services/api-backend.service";
-import { CountryAPI, StateCityAPI, Dengue, SevereDengue, DeathsByDengue, CityTables, YearCityTable, StateTables } from '../data-structure/api';
-import { features } from 'process';
+import { CountryAPI, StateCityAPI, Dengue, SevereDengue, DeathsByDengue, CityTables, StateTables } from '../data-structure/api';
+import {} from '@angular/google-maps'
 
 @Component({
 	selector: 'app-dashboard',
@@ -57,8 +57,8 @@ export class DashboardComponent implements OnInit {
 	citiesDropDownListPlaceHolder = 'Select a city';
 
 	_KPI: Array<Indicator> = [];
-	MunicipalitiesTable: Array<MunicipalityTable> = [];
-	dataSource = new MatTableDataSource<MunicipalityTable>([]);
+	MunicipalitiesTable: Array<CityTable> = [];
+	dataSource = new MatTableDataSource<CityTable>([]);
 
 	forecastingData = [];
 	forecastingLabels = [];
@@ -154,7 +154,7 @@ export class DashboardComponent implements OnInit {
 			if (parseInt(year.year) == this.scrollBarValue) {
 				this.MunicipalitiesTable = [];
 				year.cities.forEach(city => {
-					this.MunicipalitiesTable.push(new MunicipalityTable(city.state, city.city, parseFloat(city.incidence), parseFloat(city.lethality)));
+					this.MunicipalitiesTable.push(new CityTable(city.state, city.city, parseFloat(city.incidence), parseFloat(city.lethality)));
 				});
 				this.sortByIncidence();
 				return;

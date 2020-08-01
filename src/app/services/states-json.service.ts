@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { States } from '../data-structure/departmens-municipalities';
+import { States } from '../data-structure/states-cities';
 
 @Injectable({
 	providedIn: 'root'

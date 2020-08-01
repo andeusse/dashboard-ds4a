@@ -1,4 +1,4 @@
-export class MunicipalityTable{
+export class CityTable{
     public state: string;
     public municipality: string;
     public incidence: number;
