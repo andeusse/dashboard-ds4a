@@ -110,8 +110,6 @@ export class DashboardComponent implements OnInit {
 	ngOnInit(): void {
 		this.initializeDashboard();
 		this.queryCountryValues();
-		this.queryTableCityValues();
-		this.queryTableStateValues();
 	}
 
 	checkHasForecasting(){
@@ -130,7 +128,7 @@ export class DashboardComponent implements OnInit {
 		this.isLoading = true;
 		this.ApiBackendService.getCountryValues().then(value => {
 			this.countryValues = value;
-			this.refreshDashBoard();
+			this.queryTableStateValues();
 		});
 	}
 
@@ -139,6 +137,7 @@ export class DashboardComponent implements OnInit {
 		this.ApiBackendService.getTableStateValues().then(value => {
 			this.stateTableValues = value;
 			this.initializeLayerStates();
+			this.queryTableCityValues();
 		});
 	}
 
@@ -162,6 +161,7 @@ export class DashboardComponent implements OnInit {
 		this.ApiBackendService.getTableCityValues().then(value => {
 			this.cityTableValues = value;
 			this.initializeLayerCities();
+			this.refreshDashBoard();
 		});
 	}
 
@@ -247,41 +247,44 @@ export class DashboardComponent implements OnInit {
 	}
 
 	refreshDashBoard() {
-		this.dataSet = this.countryValues;
-		if ((this.idStateSelected != "") || (this.idCitySelected != "")) {
-			this.dataSet = this.selectedStateCityValues;
-		}
-		this.dataSet.dengue.forEach(year => {
-			if (parseInt(year.year) == this.scrollBarValue) {
-				this.dataSetCurrentYearDengue = year;
+		try{
+			this.dataSet = this.countryValues;
+			if ((this.idStateSelected != "") || (this.idCitySelected != "")) {
+				this.dataSet = this.selectedStateCityValues;
 			}
-		});
-		this.dataSet.severe_dengue.forEach(year => {
-			if (parseInt(year.year) == this.scrollBarValue) {
-				this.dataSetCurrentYearSevereDengue = year;
+			this.dataSet.dengue.forEach(year => {
+				if (parseInt(year.year) == this.scrollBarValue) {
+					this.dataSetCurrentYearDengue = year;
+				}
+			});
+			this.dataSet.severe_dengue.forEach(year => {
+				if (parseInt(year.year) == this.scrollBarValue) {
+					this.dataSetCurrentYearSevereDengue = year;
+				}
+			});
+			this.dataSet.deaths_by_dengue.forEach(year => {
+				if (parseInt(year.year) == this.scrollBarValue) {
+					this.dataSetCurrentYearDeathsDengue = year;
+				}
+			});
+			this.checkHasForecasting();
+			this.refreshKPIValues();
+			this.refreshForecastingChart();
+			this.refreshQuantileChart();
+			this.refreshBortmanChart();
+			this.refreshMMWRChart();
+			this.refreshCityTableValues();
+			this.refreshDengometer()
+			if (this.idStateSelected == "" && this.idCitySelected == "") {
+				this.refreshStateMapValues();
 			}
-		});
-		this.dataSet.deaths_by_dengue.forEach(year => {
-			if (parseInt(year.year) == this.scrollBarValue) {
-				this.dataSetCurrentYearDeathsDengue = year;
+			else {
+				this.refreshCityMapValues();
 			}
-		});
-		this.checkHasForecasting();
-		this.refreshKPIValues();
-		this.refreshForecastingChart();
-		this.refreshQuantileChart();
-		this.refreshBortmanChart();
-		this.refreshMMWRChart();
-		this.refreshCityTableValues();
-		this.refreshDengometer()
-		if (this.idStateSelected == "" && this.idCitySelected == "") {
-			this.refreshStateMapValues();
 		}
-		else {
-			this.refreshCityMapValues();
+		finally{
+			this.isLoading = false;
 		}
-
-		this.isLoading = false;
 	}
 
 	initializeKPI() {
