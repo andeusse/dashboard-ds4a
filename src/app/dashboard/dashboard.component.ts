@@ -231,11 +231,16 @@ export class DashboardComponent implements OnInit {
 		this.initializeDropDownStates();
 		this.initializeDropDownCities();
 
-		this.news.push(new News("Alerta por 450 casos de dengue en Medellín en lo que va de 2020", "Semana", "https://www.semana.com/nacion/articulo/colombia-hoy-medellin-en-alerta-por-450-casos-de-dengue-en-lo-corrido-del-ano/682660"));
-		this.news.push(new News("Noticia 2", "El Espectador", "https://www.google.com/"));
-		this.news.push(new News("Noticia 3", "El Espectador", "https://www.google.com/"));
-		this.news.push(new News("Noticia 4", "El Espectador", "https://www.google.com/"));
-		this.news.push(new News("Noticia 5", "El Espectador", "https://www.google.com/"));
+		this.news.push(new News("Alerta por 450 casos de dengue en Medellín en lo que va de 2020", "https://www.semana.com/nacion/articulo/colombia-hoy-medellin-en-alerta-por-450-casos-de-dengue-en-lo-corrido-del-ano/682660"));
+		this.news.push(new News("Colombia en alerta frente a fase expansiva del dengue", "https://www.eldiario.com.co/especiales/stella-calvoveapues-com/colombia-en-alerta-frente-a-fase-expansiva-del-dengue/"));
+		this.news.push(new News("En Pereira investigan posible muerte de dos personas por dengue", "https://www.radionacional.co/noticia/risaralda-dengue"));
+		this.news.push(new News("Más de 1.000 casos de dengue se han registrado en Córdoba", "https://www.rcnradio.com/colombia/caribe/mas-de-1000-casos-de-dengue-se-han-registrado-en-cordoba"));
+		this.news.push(new News("Alerta por 48 muertes probables por dengue en el país", "https://www.lafm.com.co/colombia/alerta-por-48-muertes-probables-por-dengue-en-el-pais"));
+		this.news.push(new News("Se disparan las cifras de dengue en municipios del Tolima", "https://www.rcnradio.com/colombia/region-central/se-disparan-las-cifras-de-dengue-en-municipios-del-tolima"));
+		this.news.push(new News("Dengue ha cobrado la vida de 48 personas en Colombia", "https://noticias.canalrcn.com/salud/dengue-ha-cobrado-la-vida-de-48-personas-en-colombia-353158"));
+		this.news.push(new News("Por incremento de dengue en el Huila, aumenta demanda de sangre en hospitales", "https://www.rcnradio.com/colombia/region-central/por-incremento-de-dengue-en-el-huila-aumenta-demanda-de-sangre-en"));
+		this.news.push(new News("4 Municipios del Quindío con mayor reporte de casos de dengue", "https://caracol.com.co/emisora/2020/02/29/armenia/1582989266_251691.html"));
+		this.news.push(new News("Bitácora, realidades y mitos del Coronavirus", "https://www.agenciapi.co/investigacion/salud/bitacora-realidades-y-mitos-del-coronavirus"));
 
 		let todayDate = new Date();
 		this.todayDate = todayDate.getFullYear() + "/" + (todayDate.getMonth() + 1).toString() + "/" + todayDate.getDate();

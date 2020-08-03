@@ -7,7 +7,7 @@ import { CountryAPI, StateCityAPI, CityTables, StateTables } from '../data-struc
 })
 export class ApiBackendService {
 
-	private host: string = "http://localhost:5000/";
+	private host: string = "http://200.3.144.217:5001/";
 
 	private urlGetCountry: string = this.host;
 	private urlGetState:string = this.host + "?state_id={0}";
