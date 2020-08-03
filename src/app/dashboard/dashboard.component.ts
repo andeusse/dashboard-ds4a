@@ -13,7 +13,7 @@ import { News } from '../data-structure/news'
 
 import { ApiBackendService } from "../services/api-backend.service";
 import { CountryAPI, StateCityAPI, Dengue, SevereDengue, DeathsByDengue, CityTables, StateTables } from '../data-structure/api';
-import {} from '@angular/google-maps'
+import { } from '@angular/google-maps'
 
 @Component({
 	selector: 'app-dashboard',
@@ -24,6 +24,9 @@ export class DashboardComponent implements OnInit {
 
 	news: Array<News> = [];
 	todayDate;
+
+	arrayForecasting: Array<string> = ["54001"];
+	hasForecasting: boolean = false;
 
 	intervalID: NodeJS.Timeout;
 
@@ -40,7 +43,8 @@ export class DashboardComponent implements OnInit {
 	scrollBarValue: number;
 	minScrollBarYear: number = 2007;
 	maxScrollBarYear: number = 2020;
-	maxWeekData:Number = 16;
+	maxWeekData: number = 16;
+	maxWeekForecastingData: number = 24;
 
 	displayedColumns: string[] = ['municipality', 'incidence', 'lethality'];
 
@@ -110,6 +114,18 @@ export class DashboardComponent implements OnInit {
 		this.queryTableStateValues();
 	}
 
+	checkHasForecasting(){
+		this.arrayForecasting.forEach(place => {
+			if(place == this.idCitySelected || place == this.idStateSelected){
+				this.hasForecasting = true;
+				return;
+			}
+			else{
+				this.hasForecasting = false;
+			}
+		});
+	}
+
 	queryCountryValues() {
 		this.isLoading = true;
 		this.ApiBackendService.getCountryValues().then(value => {
@@ -118,7 +134,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	queryTableStateValues(){
+	queryTableStateValues() {
 		this.isLoading = true;
 		this.ApiBackendService.getTableStateValues().then(value => {
 			this.stateTableValues = value;
@@ -126,7 +142,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	refreshStateMapValues(){
+	refreshStateMapValues() {
 		let values = [];
 		this.stateTableValues.table.forEach(year => {
 			if (parseInt(year.year) == this.scrollBarValue) {
@@ -141,7 +157,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	queryTableCityValues(){
+	queryTableCityValues() {
 		this.isLoading = true;
 		this.ApiBackendService.getTableCityValues().then(value => {
 			this.cityTableValues = value;
@@ -149,7 +165,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	refreshCityTableValues(){
+	refreshCityTableValues() {
 		this.cityTableValues.table.forEach(year => {
 			if (parseInt(year.year) == this.scrollBarValue) {
 				this.MunicipalitiesTable = [];
@@ -162,13 +178,13 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	refreshCityMapValues(){
+	refreshCityMapValues() {
 		let values = [];
 		this.cityTableValues.table.forEach(year => {
 			if (parseInt(year.year) == this.scrollBarValue) {
 				year.cities.forEach(city => {
 					let feature = this.layerCities.getFeatureById(city.code);
-					if(feature){
+					if (feature) {
 						let code: string = city.code;
 						let stateCode = code.substring(0, 2);
 						if (this.idStateSelected == stateCode) {
@@ -185,7 +201,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	queryStateValues(){
+	queryStateValues() {
 		this.isLoading = true;
 		this.ApiBackendService.getStateValues(this.idStateSelected).then(value => {
 			this.selectedStateCityValues = value;
@@ -193,7 +209,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	queryCityValues(){
+	queryCityValues() {
 		this.isLoading = true;
 		this.ApiBackendService.getCityValues(this.idCitySelected).then(value => {
 			this.selectedStateCityValues = value;
@@ -201,7 +217,7 @@ export class DashboardComponent implements OnInit {
 		});
 	}
 
-	initializeDashboard(){
+	initializeDashboard() {
 		this.scrollBarValue = 2020;
 		this.dataSource.paginator = this.paginator;
 		this.dataSource.sort = this.sort;
@@ -245,6 +261,7 @@ export class DashboardComponent implements OnInit {
 				this.dataSetCurrentYearDeathsDengue = year;
 			}
 		});
+		this.checkHasForecasting();
 		this.refreshKPIValues();
 		this.refreshForecastingChart();
 		this.refreshQuantileChart();
@@ -252,10 +269,10 @@ export class DashboardComponent implements OnInit {
 		this.refreshMMWRChart();
 		this.refreshCityTableValues();
 		this.refreshDengometer()
-		if(this.idStateSelected == "" && this.idCitySelected == ""){
+		if (this.idStateSelected == "" && this.idCitySelected == "") {
 			this.refreshStateMapValues();
 		}
-		else{
+		else {
 			this.refreshCityMapValues();
 		}
 
@@ -329,30 +346,55 @@ export class DashboardComponent implements OnInit {
 		this.forecastingData = [];
 		this.forecastingLabels = [];
 		let data = [];
-		
+		let forecastingData = [];
+
 		let color = "white";
+		let foreCastingColor = "cyan";
 		this.forecastingData = [
-			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default',
-			borderColor: color, backgroundColor: color,
-			pointBackgroundColor: color, pointBorderColor: color }
+			{
+				data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default',
+				borderColor: color, backgroundColor: color,
+				pointBackgroundColor: color, pointBorderColor: color
+			},
+			{
+				data: forecastingData, label: 'Dengue Forecasting ' + this.scrollBarValue, fill: false, yAxisID: 'default',
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
+			}
 		];
 	}
 
-	refreshForecastingChart(){
+	refreshForecastingChart() {
 		this.forecastingData = [];
 		let data = [];
-		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
-			this.forecastingLabels.push(parseInt(week.week));
-			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
-				data.push({x: week.timestamp, y: parseInt(week.value)});
+		let forecastingData = [];
+		this.dataSetCurrentYearDengue.weekly.forEach(week => {
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)) {
+				data.push({ x: week.timestamp, y: parseInt(week.value) });
+				if (parseInt(week.week) == this.maxWeekData) {
+					forecastingData.push({ x: week.timestamp, y: parseInt(week.value) });
+				}
+			}
+			else if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && parseInt(week.week) <= this.maxWeekForecastingData) {
+				forecastingData.push({ x: week.timestamp, y: parseInt(week.value) });
 			}
 		});
 		let color = "white";
+		let foreCastingColor = "cyan";
 		this.forecastingData = [
-			{ data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default',
-			borderColor: color, backgroundColor: color,
-			pointBackgroundColor: color, pointBorderColor: color }
+			{
+				data: data, label: 'Dengue ' + this.scrollBarValue, fill: false, yAxisID: 'default',
+				borderColor: color, backgroundColor: color,
+				pointBackgroundColor: color, pointBorderColor: color
+			}
 		];
+		if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && this.hasForecasting) {
+			this.forecastingData.push({
+				data: forecastingData, label: 'Dengue Forecasting ' + this.scrollBarValue, fill: false,
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
+			});
+		}
 	}
 
 	initializeQuantileChart() {
@@ -394,11 +436,13 @@ export class DashboardComponent implements OnInit {
 		this.epidemiologicalBehaviorData = [];
 		this.epidemiologicalBehaviorLabels = [];
 		let data = [];
+		let forecastingData = [];
 		let datap25 = [];
 		let datap50 = [];
 		let datap75 = [];
 
 		let dengueColor = 'white';
+		let foreCastingColor = "cyan";
 		let p25Color = 'green';
 		let p50Color = 'yellow';
 		let p75Color = 'red';
@@ -408,6 +452,11 @@ export class DashboardComponent implements OnInit {
 				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
 				borderColor: dengueColor, backgroundColor: dengueColor,
 				pointBackgroundColor: dengueColor, pointBorderColor: dengueColor
+			},
+			{
+				data: forecastingData, label: 'Forecasting ' + this.scrollBarValue, fill: false, yAxisID: 'default',
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
 			},
 			{
 				data: datap25, label: 'P25', fill: false,
@@ -429,25 +478,32 @@ export class DashboardComponent implements OnInit {
 
 	}
 
-	refreshQuantileChart(){
+	refreshQuantileChart() {
 		this.epidemiologicalBehaviorData = [];
 		this.epidemiologicalBehaviorLabels = [];
 		let data = [];
+		let forecastingData = [];
 		let datap25 = [];
 		let datap50 = [];
 		let datap75 = [];
 
-		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
-			this.forecastingLabels.push(parseInt(week.week));
-			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
-				data.push({x: week.timestamp, y: parseInt(week.value)});
+		this.dataSetCurrentYearDengue.weekly.forEach(week => {
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)) {
+				data.push({ x: week.timestamp, y: parseInt(week.value) });
+				if (parseInt(week.week) == this.maxWeekData) {
+					forecastingData.push({ x: week.timestamp, y: parseInt(week.value) });
+				}
 			}
-			datap25.push({x: week.timestamp, y: parseInt(week.P25)});
-			datap50.push({x: week.timestamp, y: parseInt(week.median)});
-			datap75.push({x: week.timestamp, y: parseInt(week.P75)});
+			else if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && parseInt(week.week) <= this.maxWeekForecastingData) {
+				forecastingData.push({ x: week.timestamp, y: parseInt(week.value) });
+			}
+			datap25.push({ x: week.timestamp, y: parseInt(week.P25) });
+			datap50.push({ x: week.timestamp, y: parseInt(week.median) });
+			datap75.push({ x: week.timestamp, y: parseInt(week.P75) });
 		});
-		
+
 		let dengueColor = 'white';
+		let foreCastingColor = "cyan";
 		let p25Color = 'green';
 		let p50Color = 'yellow';
 		let p75Color = 'red';
@@ -456,7 +512,15 @@ export class DashboardComponent implements OnInit {
 				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
 				borderColor: dengueColor, backgroundColor: dengueColor,
 				pointBackgroundColor: dengueColor, pointBorderColor: dengueColor
-			},
+			}];
+		if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && this.hasForecasting) {
+			this.epidemiologicalBehaviorData.push({
+				data: forecastingData, label: 'Forecasting ' + this.scrollBarValue, fill: false,
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
+			});
+		}
+		this.epidemiologicalBehaviorData.push(
 			{
 				data: datap25, label: 'P25', fill: false,
 				borderColor: p25Color, backgroundColor: p25Color,
@@ -472,7 +536,7 @@ export class DashboardComponent implements OnInit {
 				borderColor: p75Color, backgroundColor: p75Color,
 				pointBackgroundColor: p75Color, pointBorderColor: p75Color
 			}
-		];
+		);
 	}
 
 	initializeBortmanChart() {
@@ -514,11 +578,13 @@ export class DashboardComponent implements OnInit {
 		this.bortmanData = [];
 		this.bortmanLabels = [];
 		let data = [];
+		let forecastingData = [];
 		let dataLL = [];
 		let datapTheshold = [];
 		let datapUL = [];
 
 		let yearColor = 'white';
+		let foreCastingColor = "cyan";
 		let p25Color = 'green';
 		let p50Color = 'yellow';
 		let p75Color = 'red';
@@ -528,6 +594,11 @@ export class DashboardComponent implements OnInit {
 				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
 				borderColor: yearColor, backgroundColor: yearColor,
 				pointBackgroundColor: yearColor, pointBorderColor: yearColor
+			},
+			{
+				data: forecastingData, label: 'Forecasting ' + this.scrollBarValue, fill: false,
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
 			},
 			{
 				data: dataLL, label: 'Lower Limit IC95%', fill: false,
@@ -547,42 +618,56 @@ export class DashboardComponent implements OnInit {
 		];
 	}
 
-	refreshBortmanChart(){
+	refreshBortmanChart() {
 		this.bortmanData = [];
 		this.bortmanLabels = [];
 		let data = [];
+		let forecastingData = [];
 		let dataLL = [];
 		let datapTheshold = [];
 		let datapUL = [];
-		
-		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
-			if(parseInt(week.week) != 53){
-				this.forecastingLabels.push(parseInt(week.week));
-				if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
-					data.push({x: week.timestamp, y: parseInt(week.value)});
+
+		this.dataSetCurrentYearDengue.weekly.forEach(week => {
+			if (parseInt(week.week) != 53) {
+				if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)) {
+					data.push({ x: week.timestamp, y: parseInt(week.value) });
+					if (parseInt(week.week) == this.maxWeekData) {
+						forecastingData.push({ x: week.timestamp, y: parseInt(week.value) });
+					}
 				}
-				dataLL.push({x: week.timestamp, y: parseInt(week.lower_limit_IC95)});
-				datapTheshold.push({x: week.timestamp, y: parseInt(week.threshold_IC95)});
-				datapUL.push({x: week.timestamp, y: parseInt(week.upper_limit_IC95)});
+				else if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && parseInt(week.week) <= this.maxWeekForecastingData) {
+					forecastingData.push({ x: week.timestamp, y: parseInt(week.value) });
+				}
+				dataLL.push({ x: week.timestamp, y: parseInt(week.lower_limit_IC95) });
+				datapTheshold.push({ x: week.timestamp, y: parseInt(week.threshold_IC95) });
+				datapUL.push({ x: week.timestamp, y: parseInt(week.upper_limit_IC95) });
 			}
 		});
-		
+
 		let yearColor = 'white';
+		let foreCastingColor = "cyan";
 		let p25Color = 'green';
 		let p50Color = 'yellow';
 		let p75Color = 'red';
-
 		this.bortmanData = [
 			{
 				data: data, label: this.scrollBarValue.toString(), fill: false, pointRadius: 3, pointHitRadius: 5, showLine: true,
 				borderColor: yearColor, backgroundColor: yearColor,
 				pointBackgroundColor: yearColor, pointBorderColor: yearColor
-			},
-			{
-				data: dataLL, label: 'Lower Limit IC95%', fill: false,
-				borderColor: p25Color, backgroundColor: p25Color,
-				pointBackgroundColor: p25Color, pointBorderColor: p25Color
-			},
+			}];
+		if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && this.hasForecasting) {
+			this.bortmanData.push({
+				data: forecastingData, label: 'Forecasting ' + this.scrollBarValue, fill: false,
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
+			});
+		}
+
+		this.bortmanData.push({
+			data: dataLL, label: 'Lower Limit IC95%', fill: false,
+			borderColor: p25Color, backgroundColor: p25Color,
+			pointBackgroundColor: p25Color, pointBorderColor: p25Color
+		},
 			{
 				data: datapTheshold, label: 'Threshold', fill: false,
 				borderColor: p50Color, backgroundColor: p50Color,
@@ -592,8 +677,7 @@ export class DashboardComponent implements OnInit {
 				data: datapUL, label: 'Upper Limit IC95%', fill: false,
 				borderColor: p75Color, backgroundColor: p75Color,
 				pointBackgroundColor: p75Color, pointBorderColor: p75Color
-			}
-		];
+			});
 	}
 
 	initializeMMWRChart() {
@@ -668,25 +752,29 @@ export class DashboardComponent implements OnInit {
 		];
 	}
 
-	refreshMMWRChart(){
+	refreshMMWRChart() {
 		this._MMWRData = [];
 		this._MMWRLabels = [];
 		let data = [];
+		let forecastingData = [];
 		let upperLimit = [];
 		let lowerLimit = [];
 		let expectedReason = [];
-		
-		this.dataSetCurrentYearDengue.weekly.forEach(week =>{
-			this.forecastingLabels.push(parseInt(week.week));
-			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)){
-				data.push({x: week.timestamp, y: week.observed_reason});
+
+		this.dataSetCurrentYearDengue.weekly.forEach(week => {
+			if (!(parseInt(week.week) > this.maxWeekData && parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear)) {
+				data.push({ x: week.timestamp, y: week.observed_reason });
 			}
-			upperLimit.push({x: week.timestamp, y: week.upper_limit});
-			lowerLimit.push({x: week.timestamp, y: week.lower_limit});
-			expectedReason.push({x: week.timestamp, y: week.expected_reason});
+			else if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && parseInt(week.week) <= this.maxWeekForecastingData) {
+				forecastingData.push({ x: week.timestamp, y: parseInt(week.observed_reason) });
+			}
+			upperLimit.push({ x: week.timestamp, y: week.upper_limit });
+			lowerLimit.push({ x: week.timestamp, y: week.lower_limit });
+			expectedReason.push({ x: week.timestamp, y: week.expected_reason });
 		});
 		
 		let yearColor = 'white';
+		let foreCastingColor = "cyan";
 		let upperLimitColor = '#FF8000';
 		let lowerLimitColor = '#2848DF';
 		let expectedReasonColor = 'black';
@@ -696,12 +784,21 @@ export class DashboardComponent implements OnInit {
 				data: data, label: 'Observed Reason ' + this.scrollBarValue, fill: false, pointRadius: 5, showLine: false,
 				borderColor: yearColor, backgroundColor: yearColor,
 				pointBackgroundColor: yearColor, pointBorderColor: yearColor
-			},
-			{
-				data: upperLimit, label: 'Upper Limit', fill: false,
-				borderColor: upperLimitColor, backgroundColor: upperLimitColor,
-				pointBackgroundColor: upperLimitColor, pointBorderColor: upperLimitColor
-			},
+			}];
+
+		if (parseInt(this.dataSetCurrentYearDengue.year) == this.maxScrollBarYear && this.hasForecasting) {
+			this._MMWRData.push({
+				data: forecastingData, label: 'Observed Reason Forecasting ' + this.scrollBarValue, fill: false, pointRadius: 5, showLine: false,
+				borderColor: foreCastingColor, backgroundColor: foreCastingColor,
+				pointBackgroundColor: foreCastingColor, pointBorderColor: foreCastingColor
+			});
+		}
+
+		this._MMWRData.push({
+			data: upperLimit, label: 'Upper Limit', fill: false,
+			borderColor: upperLimitColor, backgroundColor: upperLimitColor,
+			pointBackgroundColor: upperLimitColor, pointBorderColor: upperLimitColor
+		},
 			{
 				data: lowerLimit, label: 'Lower Limit', fill: false,
 				borderColor: lowerLimitColor, backgroundColor: lowerLimitColor,
@@ -711,27 +808,26 @@ export class DashboardComponent implements OnInit {
 				data: expectedReason, label: 'Expected Reason', fill: false, pointRadius: 3, showLine: false,
 				borderColor: expectedReasonColor, backgroundColor: expectedReasonColor,
 				pointBackgroundColor: expectedReasonColor, pointBorderColor: expectedReasonColor
-			}
-		];
+			});
 	}
 
-	refreshDengometer(){
+	refreshDengometer() {
 		let value;
 		let expectedReason;
 		let upperlimit;
 
 		let tempData;
 
-		if(this.idStateSelected == "" && this.idCitySelected == ""){
+		if (this.idStateSelected == "" && this.idCitySelected == "") {
 			tempData = this.countryValues;
 		}
-		else{
+		else {
 			tempData = this.selectedStateCityValues;
 		}
 		tempData.dengue.forEach(year => {
-			if(parseInt(year.year) == this.maxScrollBarYear){
+			if (parseInt(year.year) == this.maxScrollBarYear) {
 				year.weekly.forEach(week => {
-					if(parseInt(week.week) == this.maxWeekData){
+					if (parseInt(week.week) == this.maxWeekData) {
 						value = parseFloat(week.observed_reason);
 						expectedReason = parseFloat(week.expected_reason);
 						upperlimit = parseFloat(week.upper_limit);
@@ -1017,7 +1113,7 @@ export class DashboardComponent implements OnInit {
 					let stateCode = code.substring(0, 2);
 					if (this.idStateSelected == stateCode) {
 						this.layerCities.overrideStyle(feature, { visible: true });
-					} 
+					}
 					else {
 						this.layerCities.overrideStyle(feature, { visible: false });
 					}
