@@ -1027,6 +1027,7 @@ export class DashboardComponent implements OnInit {
 						if (municipality.code == self.idCitySelected) {
 							self.citiesSelected = [];
 							self.citiesSelected[0] = municipality.name;
+							self.onCitySelect();
 							return;
 						}
 					});
