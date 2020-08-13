@@ -1,7 +1,7 @@
 export class Users{
     public users: Array<User> = [];
     constructor(){
-        let temp = new User("Ceballos Arroyo, Alberto Mario", "assets/images/AboutUs/AlbertoCeballos.jpg", "", "");
+        let temp = new User("Ceballos Arroyo, Alberto Mario", "assets/images/AboutUs/AlbertoCeballos.jpg", "https://www.linkedin.com/in/alberto-mario-ceballos-arroyo-68120913a/", "Systems Engineer (Unimagdalena), currently doing a Masters in Systems Engineering (UNAL) and undergraduate studies in Translation (UdeAntioquia). Professional and academic interests in machine learning, computer vision, and bioinformatics. Passionate about literature and cats.");
         this.users.push(temp);
         temp = new User("Eusse Giraldo, Andrés Felipe", "assets/images/AboutUs/EusseGiraldo.png", "https://www.linkedin.com/in/andres-eusse-babb8a1a6/", "Electronic engineer and electrical engineer. Master in Engineering with an emphasis on Transmission and Distribution. Great interest in areas related to object oriented programming, visualization systems in electrical systems, analysis of power systems, and Smart Grids.");
         this.users.push(temp);
